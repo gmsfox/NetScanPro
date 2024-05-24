@@ -11,15 +11,20 @@ def clear_console():
 
 def loading_screen():
     print("Loading...")
-    time.sleep(1)  # Aguarda 1 segundo
+    time.sleep(1)
     clear_console()
-    print(Style.BRIGHT + "@wbrunnno".center(100))  # Centraliza o @wbrunnno em uma linha de 100 caracteres com estilo de fonte brilhante
-    time.sleep(2)  # Aguarda mais 2 segundos antes de prosseguir
+    print(Style.BRIGHT + "@wbrunnno".center(100))
+    time.sleep(2)
     clear_console()
 
 def enter_network():
-    network = input("Enter the network to scan (e.g., 192.168.1.0/24): ")
-    return network
+    while True:
+        network = input("Enter the network to scan (e.g., 192.168.1.0/24): ")
+        try:
+            ipaddress.ip_network(network, strict=False)
+            return network
+        except ValueError:
+            print("Invalid network format. Please enter a valid network (e.g., 192.168.1.0/24).")
 
 def get_public_ip():
     """Obtém o endereço IP público do dispositivo."""
@@ -46,21 +51,29 @@ def is_port_open(host, port, timeout):
 def scan_host(host, ports, timeout):
     """Varre um host em busca de portas abertas na lista fornecida."""
     open_ports = []
+    closed_ports = []
     for port in ports:
         if is_port_open(host, port, timeout):
             open_ports.append(port)
-    return open_ports
+        else:
+            closed_ports.append(port)
+        print(f"Scanning port {port} on host {host}", end="\r")  # Feedback contínuo para cada porta
+    return open_ports, closed_ports
 
 def scan_network(network, ports, timeout):
     """Varre uma rede inteira em busca de hosts ativos e portas abertas."""
     network = ipaddress.ip_network(network, strict=False)
     active_hosts = []
+    total_ips = len(list(network.hosts()))
+    scanned_ips = 0
 
+    print(f"Scanning {network} with ports {ports}...\n")
     for ip in network.hosts():
-        open_ports = scan_host(str(ip), ports, timeout)
+        open_ports, closed_ports = scan_host(str(ip), ports, timeout)
         if open_ports:
-            active_hosts.append((str(ip), open_ports))
-        print(".", end="", flush=True)  # Exibe um ponto para indicar progresso
+            active_hosts.append((str(ip), open_ports, closed_ports))
+        scanned_ips += 1
+        print(f"Scanning {scanned_ips}/{total_ips} IPs", end="\r")  # Feedback contínuo para cada IP
     print()  # Adiciona uma quebra de linha após a varredura
 
     return active_hosts
@@ -75,10 +88,14 @@ def manual_mode(network):
             results = scan_network(network, ports, timeout=1.0)
 
             if results:
-                for host, open_ports in results:
-                    print(f"Host: {host}")
+                for host, open_ports, closed_ports in results:
+                    print(f"\nHost: {host}")
+                    print("  Open Ports:")
                     for port in open_ports:
-                        print(f"  Port {port} is open")
+                        print(f"    Port {port} is open")
+                    print("  Closed Ports:")
+                    for port in closed_ports:
+                        print(f"    Port {port} is closed")
             else:
                 print("No open ports found.")
 
@@ -88,10 +105,9 @@ def manual_mode(network):
                 ports.append(new_port)
                 print(f"Added port {new_port} to scan.")
             elif choice == '2':
-                # Re-scan the same ports
                 continue
             elif choice == '3':
-                return  # Exit manual mode and return to main menu
+                return
             else:
                 print("Invalid option. Please choose again.")
         except Exception as e:
@@ -104,14 +120,17 @@ def scan_own_network():
     ports_input = input("Enter the ports to scan (comma-separated, e.g., 22,80,443): ")
     ports = [int(port.strip()) for port in ports_input.split(',')]
     try:
-        # Varredura da rede local com exibição de progresso
         results = scan_network(own_subnet, ports, timeout=1.0)
 
         if results:
-            for host, open_ports in results:
-                print(f"Host: {host}")
+            for host, open_ports, closed_ports in results:
+                print(f"\nHost: {host}")
+                print("  Open Ports:")
                 for port in open_ports:
-                    print(f"  Port {port} is open")
+                    print(f"    Port {port} is open")
+                print("  Closed Ports:")
+                for port in closed_ports:
+                    print(f"    Port {port} is closed")
         else:
             print("No open ports found.")
     except Exception as e:
@@ -126,7 +145,7 @@ def public_ip():
         print("Your public IP address:", ip)
 
 if __name__ == "__main__":
-    init()  # Inicializa o colorama
+    init()
     loading_screen()
     while True:
         print("Menu principal:")
@@ -138,30 +157,22 @@ if __name__ == "__main__":
 
         if choice == '1':
             network = enter_network()
-            mode = input("Choose mode: (1) Automatic ports (2) Manual ports: ")
-
-            if mode == '1':
-                # Define automatic ports to scan (common ports)
-                ports = list(range(1, 1025))  # Scanning ports 1-1024
-                print(f"Scanning network {network} with ports {ports}...")
-                try:
-                    # Varredura da rede com exibição de progresso
-                    results = scan_network(network, ports, timeout=1.0)
-
-                    if results:
-                        for host, open_ports in results:
-                            print(f"Host: {host}")
-                            for port in open_ports:
-                                print(f"  Port {port} is open")
-                    else:
-                        print("No open ports found.")
-                except Exception as e:
-                    print("An error occurred:", e)
-            elif mode == '2':
-                manual_mode(network)
-            else:
-                print("Invalid mode selected. Exiting.")
-                break
+            ports = list(range(1, 1025))  # Scanning ports 1-1024
+            try:
+                results = scan_network(network, ports, timeout=1.0)
+                if results:
+                    for host, open_ports, closed_ports in results:
+                        print(f"\nHost: {host}")
+                        print("  Open Ports:")
+                        for port in open_ports:
+                            print(f"    Port {port} is open")
+                        print("  Closed Ports:")
+                        for port in closed_ports:
+                            print(f"    Port {port} is closed")
+                else:
+                    print("No open ports found.")
+            except Exception as e:
+                print("An error occurred:", e)
         elif choice == '2':
             scan_own_network()
         elif choice == '3':
