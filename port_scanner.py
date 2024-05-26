@@ -3,7 +3,9 @@ import os
 import socket
 import ipaddress
 import requests
+import webbrowser
 from colorama import init, Fore, Style
+from datetime import datetime
 
 def clear_console():
     """Limpa o console."""
@@ -17,17 +19,14 @@ def loading_screen():
     time.sleep(2)
     clear_console()
 
-def enter_network():
-    while True:
+def enter_network(language):
+    if language == '1':
         network = input("Enter the network to scan (e.g., 192.168.1.0/24): ")
-        try:
-            ipaddress.ip_network(network, strict=False)
-            return network
-        except ValueError:
-            print("Invalid network format. Please enter a valid network (e.g., 192.168.1.0/24).")
+    else:
+        network = input("Digite a rede para escanear (por exemplo, 192.168.1.0/24): ")
+    return network
 
 def get_public_ip():
-    """Obtém o endereço IP público do dispositivo."""
     try:
         response = requests.get('https://api.ipify.org')
         if response.status_code == 200:
@@ -40,7 +39,6 @@ def get_public_ip():
         return None
 
 def is_port_open(host, port, timeout):
-    """Verifica se uma porta está aberta em um host dado."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.settimeout(timeout)
         if sock.connect_ex((host, port)) == 0:
@@ -49,135 +47,250 @@ def is_port_open(host, port, timeout):
             return False
 
 def scan_host(host, ports, timeout):
-    """Varre um host em busca de portas abertas na lista fornecida."""
     open_ports = []
-    closed_ports = []
     for port in ports:
         if is_port_open(host, port, timeout):
             open_ports.append(port)
-        else:
-            closed_ports.append(port)
-        print(f"Scanning port {port} on host {host}", end="\r")  # Feedback contínuo para cada porta
-    return open_ports, closed_ports
+    return open_ports
 
 def scan_network(network, ports, timeout):
-    """Varre uma rede inteira em busca de hosts ativos e portas abertas."""
     network = ipaddress.ip_network(network, strict=False)
     active_hosts = []
-    total_ips = len(list(network.hosts()))
-    scanned_ips = 0
 
-    print(f"Scanning {network} with ports {ports}...\n")
     for ip in network.hosts():
-        open_ports, closed_ports = scan_host(str(ip), ports, timeout)
+        open_ports = scan_host(str(ip), ports, timeout)
         if open_ports:
-            active_hosts.append((str(ip), open_ports, closed_ports))
-        scanned_ips += 1
-        print(f"Scanning {scanned_ips}/{total_ips} IPs", end="\r")  # Feedback contínuo para cada IP
-    print()  # Adiciona uma quebra de linha após a varredura
+            active_hosts.append((str(ip), open_ports))
+        print(".", end="", flush=True)
+    print()
 
     return active_hosts
 
-def manual_mode(network):
-    ports_input = input("Enter the ports to scan (comma-separated, e.g., 22,80,443): ")
+def save_scan_results(network, results):
+    if os.name == 'nt':
+        desktop = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+    else:
+        desktop = os.path.join(os.path.expanduser('~'), 'Desktop')
+
+    if not os.path.exists(desktop):
+        os.makedirs(desktop)
+
+    filename = f"scan_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    filepath = os.path.join(desktop, filename)
+    
+    with open(filepath, 'w') as file:
+        file.write(f"Results for network {network}:\n")
+        for host, open_ports in results:
+            file.write(f"Host: {host}\n")
+            for port in open_ports:
+                file.write(f"  Port {port} is open\n")
+    
+    return filepath
+
+def manual_mode(network, language):
+    if language == '1':
+        ports_input = input("Enter the ports to scan (comma-separated, e.g., 22,80,443): ")
+        print(f"Scanning ports: {ports}")
+    else:
+        ports_input = input("Digite as portas para escanear (separadas por vírgula, ex.: 22,80,443): ")
+        print(f"Escaneando portas: {ports}")
+
     ports = [int(port.strip()) for port in ports_input.split(',')]
-    print(f"Scanning ports: {ports}")
 
     while True:
         try:
             results = scan_network(network, ports, timeout=1.0)
 
             if results:
-                for host, open_ports, closed_ports in results:
-                    print(f"\nHost: {host}")
-                    print("  Open Ports:")
+                if language == '1':
+                    print(f"Results for network {network}:")
+                else:
+                    print(f"Resultados para a rede {network}:")
+                for host, open_ports in results:
+                    print(f"Host: {host}")
                     for port in open_ports:
-                        print(f"    Port {port} is open")
-                    print("  Closed Ports:")
-                    for port in closed_ports:
-                        print(f"    Port {port} is closed")
+                        print(f"  Port {port} is open")
             else:
-                print("No open ports found.")
+                if language == '1':
+                    print("No open ports found.")
+                else:
+                    print("Nenhuma porta aberta encontrada.")
 
-            choice = input("Choose an option: (1) Scan another port, (2) Test the same ports again, (3) Back to main menu: ")
+            filepath = save_scan_results(network, results)
+            if language == '1':
+                print(f"A report has been generated and saved at {filepath}")
+            else:
+                print(f"Um relatório foi gerado e salvo em {filepath}")
+
+            time.sleep(10)
+            clear_console()
+
+            if language == '1':
+                choice = input("Choose an option: (1) Scan another port, (2) Test the same ports again, (3) Back to main menu: ")
+            else:
+                choice = input("Escolha uma opção: (1) Escanear outra porta, (2) Testar as mesmas portas novamente, (3) Voltar ao menu principal: ")
+            
             if choice == '1':
-                new_port = int(input("Enter the port to scan: "))
+                if language == '1':
+                    new_port = int(input("Enter the port to scan: "))
+                    print(f"Added port {new_port} to scan.")
+                else:
+                    new_port = int(input("Digite a porta para escanear: "))
+                    print(f"Porta {new_port} adicionada para escanear.")
                 ports.append(new_port)
-                print(f"Added port {new_port} to scan.")
             elif choice == '2':
                 continue
             elif choice == '3':
                 return
             else:
-                print("Invalid option. Please choose again.")
+                if language == '1':
+                    print("Invalid option. Please choose again.")
+                else:
+                    print("Opção inválida. Por favor, escolha novamente.")
         except Exception as e:
             print("An error occurred:", e)
 
-def scan_own_network():
+def scan_own_network(language):
     own_ip = socket.gethostbyname(socket.gethostname())
     own_subnet = ".".join(own_ip.split('.')[:3]) + ".0/24"
-    print(f"Scanning own network {own_subnet}...")
-    ports_input = input("Enter the ports to scan (comma-separated, e.g., 22,80,443): ")
-    ports = [int(port.strip()) for port in ports_input.split(',')]
+    if language == '1':
+        print(f"Scanning own network {own_subnet}...")
+        ports_input = input("Enter the ports to scan (comma-separated, e.g., 22,80,443): ")
+        ports = [int(port.strip()) for port in ports_input.split(',')]
+    else:
+        print(f"Escaneando a própria rede {own_subnet}...")
+        ports_input = input("Digite as portas para escanear (separadas por vírgula, ex.: 22,80,443): ")
+        ports = [int(port.strip()) for port in ports_input.split(',')]
+    
     try:
         results = scan_network(own_subnet, ports, timeout=1.0)
 
         if results:
-            for host, open_ports, closed_ports in results:
-                print(f"\nHost: {host}")
-                print("  Open Ports:")
+            if language == '1':
+                print(f"Results for own network {own_subnet}:")
+            else:
+                print(f"Resultados para a própria rede {own_subnet}:")
+            for host, open_ports in results:
+                print(f"Host: {host}")
                 for port in open_ports:
-                    print(f"    Port {port} is open")
-                print("  Closed Ports:")
-                for port in closed_ports:
-                    print(f"    Port {port} is closed")
+                    print(f"  Port {port} is open")
         else:
-            print("No open ports found.")
+            if language == '1':
+                print("No open ports found.")
+            else:
+                print("Nenhuma porta aberta encontrada.")
+
+        filepath = save_scan_results(own_subnet, results)
+        if language == '1':
+            print(f"A report has been generated and saved at {filepath}")
+        else:
+            print(f"Um relatório foi gerado e salvo em {filepath}")
+
+        time.sleep(10)
+        clear_console()
+
     except Exception as e:
         print("An error occurred:", e)
 
 def instagram():
-    print("Acesse o Instagram @wbrunnno para mais informações.")
+    webbrowser.open("https://www.instagram.com/wbrunnno/")
 
-def public_ip():
+def public_ip(language):
     ip = get_public_ip()
     if ip:
-        print("Your public IP address:", ip)
+        if language == '1':
+            print("Your public IP address:", ip)
+        else:
+            print("Seu endereço IP público:", ip)
 
 if __name__ == "__main__":
     init()
     loading_screen()
+    language = input("Choose language / Escolha o idioma: (1) English (2) Português: ")
+
     while True:
-        print("Menu principal:")
-        print("1. Enter the network to scan (e.g., 192.168.1.0/24)")
-        print("2. Scan your own network")
-        print("3. Check your public IP")
-        print("4. Visit my Instagram @wbrunnno")
-        choice = input("Enter your choice: ")
+        if language == '1':
+            print("Main Menu:")
+            print("1. Enter the network to scan (e.g., 192.168.1.0/24)")
+            print("2. Scan your own network")
+            print("3. Check your public IP")
+            print("4. Visit my Instagram @wbrunnno")
+            print("5. Exit")
+        else:
+            print("Menu Principal:")
+            print("1. Digite a rede para escanear (por exemplo, 192.168.1.0/24)")
+            print("2. Escanear sua própria rede")
+            print("3. Verificar seu IP público")
+            print("4. Visite meu Instagram @wbrunnno")
+            print("5. Sair")
+
+        choice = input("Enter your choice / Digite sua escolha: ")
 
         if choice == '1':
-            network = enter_network()
-            ports = list(range(1, 1025))  # Scanning ports 1-1024
-            try:
-                results = scan_network(network, ports, timeout=1.0)
-                if results:
-                    for host, open_ports, closed_ports in results:
-                        print(f"\nHost: {host}")
-                        print("  Open Ports:")
-                        for port in open_ports:
-                            print(f"    Port {port} is open")
-                        print("  Closed Ports:")
-                        for port in closed_ports:
-                            print(f"    Port {port} is closed")
+            network = enter_network(language)
+            if language == '1':
+                mode = input("Choose mode: (1) Automatic ports (2) Manual ports: ")
+            else:
+                mode = input("Escolha o modo: (1) Portas automáticas (2) Portas manuais: ")
+
+            if mode == '1':
+                ports = list(range(1, 1025))
+                if language == '1':
+                    print(f"Scanning network {network} with ports {ports}...")
                 else:
-                    print("No open ports found.")
-            except Exception as e:
-                print("An error occurred:", e)
+                    print(f"Escaneando a rede {network} com portas {ports}...")
+
+                try:
+                    results = scan_network(network, ports, timeout=1.0)
+
+                    if results:
+                        if language == '1':
+                            print(f"Results for network {network}:")
+                        else:
+                            print(f"Resultados para a rede {network}:")
+                        for host, open_ports in results:
+                            print(f"Host: {host}")
+                            for port in open_ports:
+                                print(f"  Port {port} is open")
+                    else:
+                        if language == '1':
+                            print("No open ports found.")
+                        else:
+                            print("Nenhuma porta aberta encontrada.")
+
+                    filepath = save_scan_results(network, results)
+                    if language == '1':
+                        print(f"A report has been generated and saved at {filepath}")
+                    else:
+                        print(f"Um relatório foi gerado e salvo em {filepath}")
+
+                    time.sleep(10)
+                    clear_console()
+
+                except Exception as e:
+                    print("An error occurred:", e)
+            elif mode == '2':
+                manual_mode(network, language)
+            else:
+                if language == '1':
+                    print("Invalid mode selected. Exiting.")
+                else:
+                    print("Modo inválido selecionado. Saindo.")
+                break
         elif choice == '2':
-            scan_own_network()
+            scan_own_network(language)
         elif choice == '3':
-            public_ip()
+            public_ip(language)
         elif choice == '4':
             instagram()
+        elif choice == '5':
+            if language == '1':
+                print("Exiting the program. Goodbye!")
+            else:
+                print("Saindo do programa. Até logo!")
+            break
         else:
-            print("Invalid choice. Please enter a number from 1 to 4.")
+            if language == '1':
+                print("Invalid choice. Please enter a number from 1 to 5.")
+            else:
+                print("Escolha inválida. Por favor, digite um número de 1 a 5.")
