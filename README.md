@@ -1,3 +1,72 @@
+O erro que você está encontrando indica que o arquivo `requirements.txt` não está presente no diretório onde você está tentando instalá-lo. Vamos garantir que o arquivo de dependências está corretamente configurado. Aqui estão os passos para resolver esse problema:
+
+### Passo a Passo para Resolver o Problema
+
+1. **Criar o Arquivo `requirements.txt`**
+   - No diretório do seu projeto, crie um arquivo chamado `requirements.txt` com o seguinte conteúdo:
+
+     ```txt
+     socket
+     subprocess
+     sys
+     time
+     os
+     datetime
+     platform
+     webbrowser
+     ```
+
+2. **Verificar a Estrutura do Projeto**
+   - Certifique-se de que o arquivo `requirements.txt` está no mesmo diretório que o arquivo `netscan_pro.py`.
+
+3. **Instalar as Dependências**
+   - Execute o comando para instalar as dependências listadas no `requirements.txt`:
+     ```sh
+     pip3 install -r requirements.txt
+     ```
+
+### Estrutura do Projeto
+
+Certifique-se de que a estrutura do seu projeto está parecida com esta:
+
+```
+NetScanPro/
+├── netscan_pro.py
+├── requirements.txt
+```
+
+### Script Completo de Instalação e Execução
+
+Para garantir que tudo está correto, aqui está um script que você pode usar para configurar seu ambiente no Kali Linux:
+
+```sh
+# Atualizar pacotes
+sudo apt update
+
+# Instalar Python 3 e pip
+sudo apt install python3 python3-pip -y
+
+# Instalar Git
+sudo apt install git -y
+
+# Clonar o repositório
+git clone https://github.com/SeuUsuario/NetScanPro.git
+cd NetScanPro
+
+# Criar o arquivo requirements.txt
+echo -e "socket\nsubprocess\nsys\ntime\nos\ndatetime\nplatform\nwebbrowser" > requirements.txt
+
+# Instalar as dependências
+pip3 install -r requirements.txt
+
+# Executar a ferramenta
+python3 netscan_pro.py
+```
+
+### README Atualizado
+
+Aqui está o README atualizado, incluindo os passos para criar o `requirements.txt` se ele não estiver presente:
+
 ## NetScan Pro - README
 
 ### Visão Geral
@@ -63,7 +132,13 @@ NetScan Pro é uma ferramenta avançada de escaneamento de rede, projetada para 
      cd NetScanPro
      ```
 
-5. **Instalar Dependências**
+5. **Criar o Arquivo `requirements.txt`**
+   - Se o arquivo `requirements.txt` não estiver presente, crie-o com:
+     ```sh
+     echo -e "socket\nsubprocess\nsys\ntime\nos\ndatetime\nplatform\nwebbrowser" > requirements.txt
+     ```
+
+6. **Instalar Dependências**
    - Execute o seguinte comando para instalar as dependências necessárias:
      ```sh
      pip3 install -r requirements.txt
@@ -91,6 +166,20 @@ NetScan Pro é uma ferramenta avançada de escaneamento de rede, projetada para 
 3. **Relatório de Resultados**
    - Após a varredura, um arquivo de relatório `.txt` será gerado automaticamente na área de trabalho com os resultados detalhados.
 
+### Notas de Atualização - v1.0.0-beta
+- **Melhoria na Exibição de Resultados**
+  - Resultados organizados e feedback contínuo durante a varredura.
+- **Relatório de Resultados**
+  - Geração automática de relatório em formato `.txt` na área de trabalho.
+  - Mensagem de confirmação exibida no terminal.
+- **Navegação Aprimorada**
+  - Adição de opção de idioma.
+  - Menu atualizado com a opção de saída.
+- **Opção de Sair**
+  - Novo menu para sair do programa de forma limpa e segura.
+- **Correções de Bugs**
+  - Correção de erros na geração e salvamento de arquivos de relatório.
+  - Melhorias na validação de entrada e manipulação de erros.
 
 ### Contribuição
 Sinta-se à vontade para contribuir com melhorias e correções. Envie suas pull requests no GitHub.
