@@ -3,11 +3,9 @@ import os
 import socket
 import ipaddress
 import requests
-import webbrowser
 from colorama import init, Fore, Style
 from datetime import datetime
 import git
-import nmap
 
 def clear_console():
     """Limpa o console."""
@@ -92,10 +90,10 @@ def save_scan_results(network, results):
 def manual_mode(network, language):
     if language == '1':
         ports_input = input("Enter the ports to scan (comma-separated, e.g., 22,80,443): ")
-        print(f"Scanning ports: {ports}")
+        print(f"Scanning ports: {ports_input}")
     else:
         ports_input = input("Digite as portas para escanear (separadas por vírgula, ex.: 22,80,443): ")
-        print(f"Escaneando portas: {ports}")
+        print(f"Escaneando portas: {ports_input}")
 
     ports = [int(port.strip()) for port in ports_input.split(',')]
 
@@ -158,10 +156,12 @@ def scan_own_network(language):
     if language == '1':
         print(f"Scanning own network {own_subnet}...")
         ports_input = input("Enter the ports to scan (comma-separated, e.g., 22,80,443): ")
+        print(f"Scanning ports: {ports_input}")
         ports = [int(port.strip()) for port in ports_input.split(',')]
     else:
         print(f"Escaneando a própria rede {own_subnet}...")
         ports_input = input("Digite as portas para escanear (separadas por vírgula, ex.: 22,80,443): ")
+        print(f"Escaneando portas: {ports_input}")
         ports = [int(port.strip()) for port in ports_input.split(',')]
     
     try:
@@ -202,6 +202,7 @@ def vulnerability_scan_mode(language):
                 if public_ip:
                     print(f"Your public IP address is: {public_ip}")
                     ports_input = input("Enter the ports to scan (comma-separated, e.g., 22,80,443): ")
+                    print(f"Scanning ports: {ports_input}")
                     ports = [int(port.strip()) for port in ports_input.split(',')]
                 else:
                     print("Unable to retrieve public IP address.")
@@ -211,6 +212,7 @@ def vulnerability_scan_mode(language):
                 if public_ip:
                     print(f"Seu endereço de IP público é: {public_ip}")
                     ports_input = input("Digite as portas para escanear (separadas por vírgula, ex.: 22,80,443): ")
+                    print(f"Escaneando portas: {ports_input}")
                     ports = [int(port.strip()) for port in ports_input.split(',')]
                 else:
                     print("Não foi possível recuperar o endereço de IP público.")
@@ -287,7 +289,6 @@ def main_menu():
         print(Fore.CYAN + Style.BRIGHT + " Main Menu ".center(50, "*"))
         print(Fore.CYAN + "1. English")
         print(Fore.CYAN + "2. Português")
-        print(Fore.CYAN + "3. Update Tool")
         print(Fore.CYAN + "0. Exit")
         print(Fore.CYAN + "*" * 50)
 
@@ -304,11 +305,13 @@ def main_menu():
                     print(Fore.CYAN + "1. Enter network to scan")
                     print(Fore.CYAN + "2. Scan own network")
                     print(Fore.CYAN + "3. Vulnerability scan mode")
+                    print(Fore.CYAN + "4. Update Tool")
                     print(Fore.CYAN + "0. Back to main menu")
                 else:
                     print(Fore.CYAN + "1. Digite a rede para escanear")
                     print(Fore.CYAN + "2. Escanear a própria rede")
                     print(Fore.CYAN + "3. Modo de varredura de vulnerabilidades")
+                    print(Fore.CYAN + "4. Atualizar Ferramenta")
                     print(Fore.CYAN + "0. Voltar ao menu principal")
                 print(Fore.CYAN + "*" * 50)
 
@@ -323,12 +326,15 @@ def main_menu():
                     scan_own_network(language)
                 elif option == '3':
                     vulnerability_scan_mode(language)
+                elif option == '4':
+                    update_tool(language)
                 else:
                     if language == '1':
                         print("Invalid option. Please choose again.")
                     else:
                         print("Opção inválida. Por favor, escolha novamente.")
-        elif language == '3':
-            update_tool(language)
         else:
             print("Invalid option. Please choose again.")
+
+if __name__ == "__main__":
+    main_menu()
