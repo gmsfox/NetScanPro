@@ -268,11 +268,19 @@ def update_tool(language):
     try:
         repo = git.Repo(local_dir)
         origin = repo.remotes.origin
-        origin.pull()
+        result = origin.pull()
+        if result and result[0].flags & git.remote.FetchInfo.HEAD_UPTODATE:
+            print("Already up-to-date.")
+            return
+
         if language == '1':
             print("The tool has been updated successfully.")
         else:
             print("A ferramenta foi atualizada com sucesso.")
+
+        time.sleep(10)
+        clear_console()
+
     except Exception as e:
         if language == '1':
             print("An error occurred while updating the tool:", e)
