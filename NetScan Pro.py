@@ -296,6 +296,7 @@ def update_tool(language):
 
             time.sleep(10)
             clear_console()
+            return  # Retorna após limpar o console
 
         else:
             if language == '1':
@@ -358,6 +359,7 @@ def main_menu():
                     vulnerability_scan_mode(language)
                 elif option == '4':
                     update_tool(language)
+                    clear_console()  # Limpa o console após atualização
                 else:
                     if language == '1':
                         print("Invalid option. Please choose again.")
