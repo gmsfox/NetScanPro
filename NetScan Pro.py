@@ -259,8 +259,24 @@ def update_tool(language):
 
     try:
         repo = git.Repo(local_dir)
+        before = set(repo.head.commit.diff(None))
         repo.remotes.origin.pull()
-        print("The tool has been updated successfully.")
+        after = set(repo.head.commit.diff(None))
+
+        updated_files = after - before
+        if updated_files:
+            if language == '1':
+                print("The following files have been updated:")
+            else:
+                print("Os seguintes arquivos foram atualizados:")
+            for file in updated_files:
+                print(f"  {file.a_path} ({file.change_type})")
+        else:
+            if language == '1':
+                print("The tool has been updated successfully.")
+            else:
+                print("A ferramenta foi atualizada com sucesso.")
+
         time.sleep(10)
         clear_console()
 
