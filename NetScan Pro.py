@@ -6,6 +6,8 @@ import requests
 import webbrowser
 from colorama import init, Fore, Style
 from datetime import datetime
+import git
+import nmap
 
 def clear_console():
     """Limpa o console."""
@@ -192,105 +194,141 @@ def scan_own_network(language):
     except Exception as e:
         print("An error occurred:", e)
 
-def instagram():
-    webbrowser.open("https://www.instagram.com/wbrunnno/")
+def vulnerability_scan_mode(language):
+    while True:
+        try:
+            if language == '1':
+                public_ip = get_public_ip()
+                if public_ip:
+                    print(f"Your public IP address is: {public_ip}")
+                    ports_input = input("Enter the ports to scan (comma-separated, e.g., 22,80,443): ")
+                    ports = [int(port.strip()) for port in ports_input.split(',')]
+                else:
+                    print("Unable to retrieve public IP address.")
+                    return
+            else:
+                public_ip = get_public_ip()
+                if public_ip:
+                    print(f"Seu endereço de IP público é: {public_ip}")
+                    ports_input = input("Digite as portas para escanear (separadas por vírgula, ex.: 22,80,443): ")
+                    ports = [int(port.strip()) for port in ports_input.split(',')]
+                else:
+                    print("Não foi possível recuperar o endereço de IP público.")
+                    return
 
-def public_ip(language):
-    ip = get_public_ip()
-    if ip:
+            results = scan_host(public_ip, ports, timeout=1.0)
+
+            if results:
+                if language == '1':
+                    print(f"Results for public IP {public_ip}:")
+                else:
+                    print(f"Resultados para o IP público {public_ip}:")
+                for port in results:
+                    print(f"  Port {port} is open")
+            else:
+                if language == '1':
+                    print("No open ports found.")
+                else:
+                    print("Nenhuma porta aberta encontrada.")
+
+            time.sleep(10)
+            clear_console()
+
+            if language == '1':
+                choice = input("Choose an option: (1) Scan another port, (2) Test the same ports again, (3) Back to main menu: ")
+            else:
+                choice = input("Escolha uma opção: (1) Escanear outra porta, (2) Testar as mesmas portas novamente, (3) Voltar ao menu principal: ")
+
+            if choice == '1':
+                if language == '1':
+                    new_port = int(input("Enter the port to scan: "))
+                    print(f"Added port {new_port} to scan.")
+                else:
+                    new_port = int(input("Digite a porta para escanear: "))
+                    print(f"Porta {new_port} adicionada para escanear.")
+                ports.append(new_port)
+            elif choice == '2':
+                continue
+            elif choice == '3':
+                return
+            else:
+                if language == '1':
+                    print("Invalid option. Please choose again.")
+                else:
+                    print("Opção inválida. Por favor, escolha novamente.")
+        except Exception as e:
+            print("An error occurred:", e)
+
+def update_tool(language):
+    repo_url = "URL_DO_SEU_REPOSITORIO_GIT"
+    local_dir = os.path.dirname(os.path.abspath(__file__))
+
+    try:
+        repo = git.Repo(local_dir)
+        origin = repo.remotes.origin
+        origin.pull()
         if language == '1':
-            print("Your public IP address:", ip)
+            print("The tool has been updated successfully.")
         else:
-            print("Seu endereço IP público:", ip)
+            print("A ferramenta foi atualizada com sucesso.")
+    except Exception as e:
+        if language == '1':
+            print("An error occurred while updating the tool:", e)
+        else:
+            print("Ocorreu um erro ao atualizar a ferramenta:", e)
 
-if __name__ == "__main__":
-    init()
+def main_menu():
+    init(autoreset=True)
     loading_screen()
-    language = input("Choose language / Escolha o idioma: (1) English (2) Português: ")
 
     while True:
-        if language == '1':
-            print("Main Menu:")
-            print("1. Enter the network to scan (e.g., 192.168.1.0/24)")
-            print("2. Scan your own network")
-            print("3. Check your public IP")
-            print("4. Visit my Instagram @wbrunnno")
-            print("5. Exit")
-        else:
-            print("Menu Principal:")
-            print("1. Digite a rede para escanear (por exemplo, 192.168.1.0/24)")
-            print("2. Escanear sua própria rede")
-            print("3. Verificar seu IP público")
-            print("4. Visite meu Instagram @wbrunnno")
-            print("5. Sair")
+        clear_console()
 
-        choice = input("Enter your choice / Digite sua escolha: ")
+        print(Fore.CYAN + Style.BRIGHT + " Main Menu ".center(50, "*"))
+        print(Fore.CYAN + "1. English")
+        print(Fore.CYAN + "2. Português")
+        print(Fore.CYAN + "3. Update Tool")
+        print(Fore.CYAN + "0. Exit")
+        print(Fore.CYAN + "*" * 50)
 
-        if choice == '1':
-            network = enter_network(language)
-            if language == '1':
-                mode = input("Choose mode: (1) Automatic ports (2) Manual ports: ")
-            else:
-                mode = input("Escolha o modo: (1) Portas automáticas (2) Portas manuais: ")
+        language = input(Fore.CYAN + "Choose a language / Escolha um idioma: ")
 
-            if mode == '1':
-                ports = list(range(1, 1025))
-                if language == '1':
-                    print(f"Scanning network {network} with ports {ports}...")
-                else:
-                    print(f"Escaneando a rede {network} com portas {ports}...")
-
-                try:
-                    results = scan_network(network, ports, timeout=1.0)
-
-                    if results:
-                        if language == '1':
-                            print(f"Results for network {network}:")
-                        else:
-                            print(f"Resultados para a rede {network}:")
-                        for host, open_ports in results:
-                            print(f"Host: {host}")
-                            for port in open_ports:
-                                print(f"  Port {port} is open")
-                    else:
-                        if language == '1':
-                            print("No open ports found.")
-                        else:
-                            print("Nenhuma porta aberta encontrada.")
-
-                    filepath = save_scan_results(network, results)
-                    if language == '1':
-                        print(f"A report has been generated and saved at {filepath}")
-                    else:
-                        print(f"Um relatório foi gerado e salvo em {filepath}")
-
-                    time.sleep(10)
-                    clear_console()
-
-                except Exception as e:
-                    print("An error occurred:", e)
-            elif mode == '2':
-                manual_mode(network, language)
-            else:
-                if language == '1':
-                    print("Invalid mode selected. Exiting.")
-                else:
-                    print("Modo inválido selecionado. Saindo.")
-                break
-        elif choice == '2':
-            scan_own_network(language)
-        elif choice == '3':
-            public_ip(language)
-        elif choice == '4':
-            instagram()
-        elif choice == '5':
-            if language == '1':
-                print("Exiting the program. Goodbye!")
-            else:
-                print("Saindo do programa. Até logo!")
+        if language == '0':
             break
+        elif language == '1' or language == '2':
+            clear_console()
+
+            while True:
+                print(Fore.CYAN + Style.BRIGHT + " Network Scanner ".center(50, "*"))
+                if language == '1':
+                    print(Fore.CYAN + "1. Enter network to scan")
+                    print(Fore.CYAN + "2. Scan own network")
+                    print(Fore.CYAN + "3. Vulnerability scan mode")
+                    print(Fore.CYAN + "0. Back to main menu")
+                else:
+                    print(Fore.CYAN + "1. Digite a rede para escanear")
+                    print(Fore.CYAN + "2. Escanear a própria rede")
+                    print(Fore.CYAN + "3. Modo de varredura de vulnerabilidades")
+                    print(Fore.CYAN + "0. Voltar ao menu principal")
+                print(Fore.CYAN + "*" * 50)
+
+                option = input(Fore.CYAN + "Choose an option / Escolha uma opção: ")
+
+                if option == '0':
+                    break
+                elif option == '1':
+                    network = enter_network(language)
+                    manual_mode(network, language)
+                elif option == '2':
+                    scan_own_network(language)
+                elif option == '3':
+                    vulnerability_scan_mode(language)
+                else:
+                    if language == '1':
+                        print("Invalid option. Please choose again.")
+                    else:
+                        print("Opção inválida. Por favor, escolha novamente.")
+        elif language == '3':
+            update_tool(language)
         else:
-            if language == '1':
-                print("Invalid choice. Please enter a number from 1 to 5.")
-            else:
-                print("Escolha inválida. Por favor, digite um número de 1 a 5.")
+            print("Invalid option. Please choose again.")
