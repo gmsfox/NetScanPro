@@ -237,21 +237,13 @@ def vulnerability_scan_mode(language):
             clear_console()
 
             if language == '1':
-                choice = input("Choose an option: (1) Scan another port, (2) Test the same ports again, (3) Back to main menu: ")
+                choice = input("Choose an option: (1) Scan again, (2) Back to main menu: ")
             else:
-                choice = input("Escolha uma opção: (1) Escanear outra porta, (2) Testar as mesmas portas novamente, (3) Voltar ao menu principal: ")
+                choice = input("Escolha uma opção: (1) Escanear novamente, (2) Voltar ao menu principal: ")
 
             if choice == '1':
-                if language == '1':
-                    new_port = int(input("Enter the port to scan: "))
-                    print(f"Added port {new_port} to scan.")
-                else:
-                    new_port = int(input("Digite a porta para escanear: "))
-                    print(f"Porta {new_port} adicionada para escanear.")
-                ports.append(new_port)
-            elif choice == '2':
                 continue
-            elif choice == '3':
+            elif choice == '2':
                 return
             else:
                 if language == '1':
@@ -267,25 +259,13 @@ def update_tool(language):
 
     try:
         repo = git.Repo(local_dir)
-        origin = repo.remotes.origin
-        result = origin.pull()
-        if result and result[0].flags & git.remote.FetchInfo.HEAD_UPTODATE:
-            print("Already up-to-date.")
-            return
-
-        if language == '1':
-            print("The tool has been updated successfully.")
-        else:
-            print("A ferramenta foi atualizada com sucesso.")
-
+        repo.remotes.origin.pull()
+        print("The tool has been updated successfully.")
         time.sleep(10)
         clear_console()
 
     except Exception as e:
-        if language == '1':
-            print("An error occurred while updating the tool:", e)
-        else:
-            print("Ocorreu um erro ao atualizar a ferramenta:", e)
+        print(f"An error occurred while updating the tool: {e}")
 
 def main_menu():
     init(autoreset=True)
