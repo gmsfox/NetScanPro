@@ -319,7 +319,6 @@ def main_menu():
         print(Fore.CYAN + Style.BRIGHT + " Main Menu ".center(50, "*"))
         print(Fore.CYAN + "1. English")
         print(Fore.CYAN + "2. Português")
-        print(Fore.CYAN + "3. Update Tool")
         print(Fore.CYAN + "0. Exit")
         print(Fore.CYAN + "*" * 50)
 
@@ -360,8 +359,6 @@ def main_menu():
                         print("Invalid option. Please choose again.")
                     else:
                         print("Opção inválida. Por favor, escolha novamente.")
-        elif language == '3':
-            update_tool(language)
         else:
             print("Invalid option. Please choose again.")
 
