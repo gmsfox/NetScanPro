@@ -335,11 +335,13 @@ def main_menu():
                     print(Fore.CYAN + "1. Enter network to scan")
                     print(Fore.CYAN + "2. Scan own network")
                     print(Fore.CYAN + "3. Vulnerability scan mode")
+                    print(Fore.CYAN + "4. Update tool")
                     print(Fore.CYAN + "0. Back to main menu")
                 else:
                     print(Fore.CYAN + "1. Digite a rede para escanear")
                     print(Fore.CYAN + "2. Escanear a própria rede")
                     print(Fore.CYAN + "3. Modo de varredura de vulnerabilidades")
+                    print(Fore.CYAN + "4. Atualizar ferramenta")
                     print(Fore.CYAN + "0. Voltar ao menu principal")
                 print(Fore.CYAN + "*" * 50)
 
@@ -354,6 +356,8 @@ def main_menu():
                     scan_own_network(language)
                 elif option == '3':
                     vulnerability_scan_mode(language)
+                elif option == '4':
+                    update_tool(language)
                 else:
                     if language == '1':
                         print("Invalid option. Please choose again.")
