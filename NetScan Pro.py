@@ -334,7 +334,7 @@ def main_menu():
             clear_console()
 
             while True:
-                print(Fore.CYAN + Style.BRIGHT + " Network Scanner ".center(50, "*"))
+                print(Fore.CYAN + Style.BRIGHT + " NetScan Pro ".center(50, "*"))
                 if language == '1':
                     print(Fore.CYAN + "1. Enter network to scan")
                     print(Fore.CYAN + "2. Scan own network")
