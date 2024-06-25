@@ -5,10 +5,12 @@ import ipaddress
 import requests
 from colorama import init, Fore, Style
 from datetime import datetime
+import phonenumbers
+from phonenumbers import geocoder, carrier
 import git
 
 def clear_console():
-    """Limpa o console."""
+    """Clears the console screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def loading_screen():
@@ -253,8 +255,36 @@ def vulnerability_scan_mode(language):
         except Exception as e:
             print("An error occurred:", e)
 
+def phone_number_info(language):
+    if language == '1':
+        phone_number = input("Enter the phone number (with country code, e.g., +15551234567): ")
+    else:
+        phone_number = input("Digite o número de telefone (com código do país, ex.: +55123456789): ")
+
+    try:
+        number = phonenumbers.parse(phone_number)
+        if phonenumbers.is_valid_number(number):
+            region = geocoder.description_for_number(number, "en" if language == '1' else "pt")
+            carrier_name = carrier.name_for_number(number, "en" if language == '1' else "pt")
+            
+            if language == '1':
+                print(f"Information for phone number {phone_number}:")
+                print(f"  Region: {region}")
+                print(f"  Carrier: {carrier_name}")
+            else:
+                print(f"Informações para o número de telefone {phone_number}:")
+                print(f"  Região: {region}")
+                print(f"  Operadora: {carrier_name}")
+        else:
+            if language == '1':
+                print("Invalid phone number. Please enter a valid phone number.")
+            else:
+                print("Número de telefone inválido. Por favor, digite um número válido.")
+    except Exception as e:
+        print("An error occurred:", e)
+
 def update_tool(language):
-    repo_url = "URL_DO_SEU_REPOSITORIO_GIT"
+    repo_url = "https://github.com/WeverttonBruno/NetScanPro"
     local_dir = os.path.dirname(os.path.abspath(__file__))
 
     try:
@@ -309,13 +339,15 @@ def main_menu():
                     print(Fore.CYAN + "1. Enter network to scan")
                     print(Fore.CYAN + "2. Scan own network")
                     print(Fore.CYAN + "3. Vulnerability scan mode")
-                    print(Fore.CYAN + "4. Update Tool")
+                    print(Fore.CYAN + "4. Phone number information")
+                    print(Fore.CYAN + "5. Update Tool")
                     print(Fore.CYAN + "0. Back to main menu")
                 else:
                     print(Fore.CYAN + "1. Digite a rede para escanear")
                     print(Fore.CYAN + "2. Escanear a própria rede")
                     print(Fore.CYAN + "3. Modo de varredura de vulnerabilidades")
-                    print(Fore.CYAN + "4. Atualizar Ferramenta")
+                    print(Fore.CYAN + "4. Informações de número de telefone")
+                    print(Fore.CYAN + "5. Atualizar Ferramenta")
                     print(Fore.CYAN + "0. Voltar ao menu principal")
                 print(Fore.CYAN + "*" * 50)
 
@@ -331,6 +363,8 @@ def main_menu():
                 elif option == '3':
                     vulnerability_scan_mode(language)
                 elif option == '4':
+                    phone_number_info(language)
+                elif option == '5':
                     update_tool(language)
                 else:
                     if language == '1':
