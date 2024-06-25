@@ -6,7 +6,7 @@ import requests
 from colorama import init, Fore, Style
 from datetime import datetime
 import phonenumbers
-from phonenumbers import geocoder, carrier
+from phonenumbers import geocoder, carrier, PhoneNumberType
 import git
 
 def clear_console():
@@ -252,127 +252,129 @@ def vulnerability_scan_mode(language):
                     print("Invalid option. Please choose again.")
                 else:
                     print("Opção inválida. Por favor, escolha novamente.")
+
         except Exception as e:
             print("An error occurred:", e)
 
-def phone_number_info(language):
-    if language == '1':
-        phone_number = input("Enter the phone number (with country code, e.g., +15551234567): ")
-    else:
-        phone_number = input("Digite o número de telefone (com código do país, ex.: +55123456789): ")
+def validate_phone_number(number):
+    parsed_number = phonenumbers.parse(number, "BR")
+    valid = phonenumbers.is_valid_number(parsed_number)
+    local_format = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.NATIONAL)
+    international_format = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+    country_prefix = f"+{parsed_number.country_code}"
+    country_code = parsed_number.country_code
+    country_name = geocoder.description_for_number(parsed_number, 'en')
+    location = geocoder.description_for_number(parsed_number, 'pt')
+    carrier_name = carrier.name_for_number(parsed_number, 'pt')
+    line_type = str(PhoneNumberType.MOBILE) if phonenumbers.number_type(parsed_number) == PhoneNumberType.MOBILE else 'fixed line'
 
-    try:
-        number = phonenumbers.parse(phone_number)
-        if phonenumbers.is_valid_number(number):
-            region = geocoder.description_for_number(number, "en" if language == '1' else "pt")
-            carrier_name = carrier.name_for_number(number, "en" if language == '1' else "pt")
-            
-            if language == '1':
-                print(f"Information for phone number {phone_number}:")
-                print(f"  Region: {region}")
-                print(f"  Carrier: {carrier_name}")
-            else:
-                print(f"Informações para o número de telefone {phone_number}:")
-                print(f"  Região: {region}")
-                print(f"  Operadora: {carrier_name}")
-        else:
-            if language == '1':
-                print("Invalid phone number. Please enter a valid phone number.")
-            else:
-                print("Número de telefone inválido. Por favor, digite um número válido.")
-    except Exception as e:
-        print("An error occurred:", e)
+    return {
+        "valid": valid,
+        "number": number,
+        "local_format": local_format,
+        "international_format": international_format,
+        "country_prefix": country_prefix,
+        "country_code": country_code,
+        "country_name": country_name,
+        "location": location,
+        "carrier": carrier_name,
+        "line_type": line_type
+    }
 
+def phone_number_info():
+    while True:
+        number = input("Digite o número de telefone no formato internacional (ex.: +5581994852435): ")
+        try:
+            info = validate_phone_number(number)
+            print(f"""
+            valid: {info['valid']}
+            number: {info['number']}
+            local_format: {info['local_format']}
+            international_format: {info['international_format']}
+            country_prefix: {info['country_prefix']}
+            country_code: {info['country_code']}
+            country_name: {info['country_name']}
+            location: {info['location']}
+            carrier: {info['carrier']}
+            line_type: {info['line_type']}
+            """)
+
+            if input("Deseja consultar outro número? (s/n): ").lower() != 's':
+                break
+
+        except phonenumbers.phonenumberutil.NumberParseException:
+            print("Número de telefone inválido. Por favor, tente novamente.")
+        
 def update_tool(language):
-    repo_url = "https://github.com/WeverttonBruno/NetScanPro"
-    local_dir = os.path.dirname(os.path.abspath(__file__))
-
     try:
-        repo = git.Repo(local_dir)
-        before = set(repo.head.commit.diff(None))
+        repo = git.Repo('.')
         repo.remotes.origin.pull()
-        after = set(repo.head.commit.diff(None))
-
-        updated_files = after - before
-        if updated_files:
-            if language == '1':
-                print("The following files have been updated:")
-            else:
-                print("Os seguintes arquivos foram atualizados:")
-            for file in updated_files:
-                print(f"  {file.a_path} ({file.change_type})")
+        if language == '1':
+            print("The tool has been successfully updated.")
         else:
-            if language == '1':
-                print("The tool has been updated successfully.")
-            else:
-                print("A ferramenta foi atualizada com sucesso.")
-
-        time.sleep(10)
-        clear_console()
-
+            print("A ferramenta foi atualizada com sucesso.")
     except Exception as e:
-        print(f"An error occurred while updating the tool: {e}")
+        if language == '1':
+            print("An error occurred while updating the tool:", e)
+        else:
+            print("Ocorreu um erro ao atualizar a ferramenta:", e)
 
 def main_menu():
     init(autoreset=True)
     loading_screen()
 
+    print("Language/Idioma:")
+    print("1. English")
+    print("2. Português")
+    language = input("Choose your language / Escolha o seu idioma: ")
+
+    while language not in ['1', '2']:
+        print("Invalid choice. Please choose again.")
+        print("Escolha inválida. Por favor, escolha novamente.")
+        language = input("Choose your language / Escolha o seu idioma: ")
+
     while True:
         clear_console()
-
-        print(Fore.CYAN + Style.BRIGHT + " Main Menu ".center(50, "*"))
-        print(Fore.CYAN + "1. English")
-        print(Fore.CYAN + "2. Português")
-        print(Fore.CYAN + "0. Exit")
-        print(Fore.CYAN + "*" * 50)
-
-        language = input(Fore.CYAN + "Choose a language / Escolha um idioma: ")
-
-        if language == '0':
-            break
-        elif language == '1' or language == '2':
-            clear_console()
-
-            while True:
-                print(Fore.CYAN + Style.BRIGHT + " NetScan Pro ".center(50, "*"))
-                if language == '1':
-                    print(Fore.CYAN + "1. Enter network to scan")
-                    print(Fore.CYAN + "2. Scan own network")
-                    print(Fore.CYAN + "3. Vulnerability scan mode")
-                    print(Fore.CYAN + "4. Phone number information")
-                    print(Fore.CYAN + "5. Update Tool")
-                    print(Fore.CYAN + "0. Back to main menu")
-                else:
-                    print(Fore.CYAN + "1. Digite a rede para escanear")
-                    print(Fore.CYAN + "2. Escanear a própria rede")
-                    print(Fore.CYAN + "3. Modo de varredura de vulnerabilidades")
-                    print(Fore.CYAN + "4. Informações de número de telefone")
-                    print(Fore.CYAN + "5. Atualizar Ferramenta")
-                    print(Fore.CYAN + "0. Voltar ao menu principal")
-                print(Fore.CYAN + "*" * 50)
-
-                option = input(Fore.CYAN + "Choose an option / Escolha uma opção: ")
-
-                if option == '0':
-                    break
-                elif option == '1':
-                    network = enter_network(language)
-                    manual_mode(network, language)
-                elif option == '2':
-                    scan_own_network(language)
-                elif option == '3':
-                    vulnerability_scan_mode(language)
-                elif option == '4':
-                    phone_number_info(language)
-                elif option == '5':
-                    update_tool(language)
-                else:
-                    if language == '1':
-                        print("Invalid option. Please choose again.")
-                    else:
-                        print("Opção inválida. Por favor, escolha novamente.")
+        print("NetScanPro".center(100, "="))
+        if language == '1':
+            print("1. Scan a Network")
+            print("2. Scan Own Network")
+            print("3. Vulnerability Scan")
+            print("4. Phone Number Information")
+            print("5. Update Tool")
+            print("6. Exit")
+            choice = input("Choose an option: ")
         else:
-            print("Invalid option. Please choose again.")
+            print("1. Escanear uma Rede")
+            print("2. Escanear a Própria Rede")
+            print("3. Escaneamento de Vulnerabilidades")
+            print("4. Informações de Número de Telefone")
+            print("5. Atualizar Ferramenta")
+            print("6. Sair")
+            choice = input("Escolha uma opção: ")
+
+        if choice == '1':
+            network = enter_network(language)
+            manual_mode(network, language)
+        elif choice == '2':
+            scan_own_network(language)
+        elif choice == '3':
+            vulnerability_scan_mode(language)
+        elif choice == '4':
+            phone_number_info()
+        elif choice == '5':
+            update_tool(language)
+        elif choice == '6':
+            if language == '1':
+                print("Exiting the tool. Goodbye!")
+            else:
+                print("Saindo da ferramenta. Até logo!")
+            break
+        else:
+            if language == '1':
+                print("Invalid option. Please choose again.")
+            else:
+                print("Opção inválida. Por favor, escolha novamente.")
 
 if __name__ == "__main__":
     main_menu()
