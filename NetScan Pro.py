@@ -3,11 +3,9 @@ import os
 import socket
 import ipaddress
 import requests
-import webbrowser
 from colorama import init, Fore, Style
 from datetime import datetime
 import git
-import nmap
 
 def clear_console():
     """Limpa o console."""
@@ -90,7 +88,6 @@ def save_scan_results(network, results):
     return filepath
 
 def manual_mode(network, language):
-    ports = []  # Inicializa a lista de portas aqui
     if language == '1':
         ports_input = input("Enter the ports to scan (comma-separated, e.g., 22,80,443): ")
         print(f"Scanning ports: {ports_input}")
@@ -154,7 +151,6 @@ def manual_mode(network, language):
             print("An error occurred:", e)
 
 def scan_own_network(language):
-    ports = []  # Inicializa a lista de portas aqui
     own_ip = socket.gethostbyname(socket.gethostname())
     own_subnet = ".".join(own_ip.split('.')[:3]) + ".0/24"
     if language == '1':
@@ -206,6 +202,7 @@ def vulnerability_scan_mode(language):
                 if public_ip:
                     print(f"Your public IP address is: {public_ip}")
                     ports_input = input("Enter the ports to scan (comma-separated, e.g., 22,80,443): ")
+                    print(f"Scanning ports: {ports_input}")
                     ports = [int(port.strip()) for port in ports_input.split(',')]
                 else:
                     print("Unable to retrieve public IP address.")
@@ -215,6 +212,7 @@ def vulnerability_scan_mode(language):
                 if public_ip:
                     print(f"Seu endereço de IP público é: {public_ip}")
                     ports_input = input("Digite as portas para escanear (separadas por vírgula, ex.: 22,80,443): ")
+                    print(f"Escaneando portas: {ports_input}")
                     ports = [int(port.strip()) for port in ports_input.split(',')]
                 else:
                     print("Não foi possível recuperar o endereço de IP público.")
@@ -239,21 +237,13 @@ def vulnerability_scan_mode(language):
             clear_console()
 
             if language == '1':
-                choice = input("Choose an option: (1) Scan another port, (2) Test the same ports again, (3) Back to main menu: ")
+                choice = input("Choose an option: (1) Scan again, (2) Back to main menu: ")
             else:
-                choice = input("Escolha uma opção: (1) Escanear outra porta, (2) Testar as mesmas portas novamente, (3) Voltar ao menu principal: ")
+                choice = input("Escolha uma opção: (1) Escanear novamente, (2) Voltar ao menu principal: ")
 
             if choice == '1':
-                if language == '1':
-                    new_port = int(input("Enter the port to scan: "))
-                    print(f"Added port {new_port} to scan.")
-                else:
-                    new_port = int(input("Digite a porta para escanear: "))
-                    print(f"Porta {new_port} adicionada para escanear.")
-                ports.append(new_port)
-            elif choice == '2':
                 continue
-            elif choice == '3':
+            elif choice == '2':
                 return
             else:
                 if language == '1':
@@ -264,51 +254,34 @@ def vulnerability_scan_mode(language):
             print("An error occurred:", e)
 
 def update_tool(language):
+    repo_url = "URL_DO_SEU_REPOSITORIO_GIT"
     local_dir = os.path.dirname(os.path.abspath(__file__))
+
     try:
         repo = git.Repo(local_dir)
-        current_commit = repo.head.commit
+        before = set(repo.head.commit.diff(None))
         repo.remotes.origin.pull()
-        new_commit = repo.head.commit
+        after = set(repo.head.commit.diff(None))
 
-        diff_index = current_commit.diff(new_commit)
-
-        if len(diff_index) > 0:
+        updated_files = after - before
+        if updated_files:
+            if language == '1':
+                print("The following files have been updated:")
+            else:
+                print("Os seguintes arquivos foram atualizados:")
+            for file in updated_files:
+                print(f"  {file.a_path} ({file.change_type})")
+        else:
             if language == '1':
                 print("The tool has been updated successfully.")
-                print("Updated files:")
             else:
                 print("A ferramenta foi atualizada com sucesso.")
-                print("Arquivos atualizados:")
 
-            for diff_item in diff_index:
-                if diff_item.new_file:
-                    change_type = "addition"
-                elif diff_item.deleted_file:
-                    change_type = "deletion"
-                else:
-                    change_type = "modification"
-
-                if language == '1':
-                    print(f"{diff_item.b_path}: {change_type}")
-                else:
-                    print(f"{diff_item.b_path}: {change_type}")
-
-            time.sleep(10)
-            clear_console()
-            return  # Retorna após limpar o console
-
-        else:
-            if language == '1':
-                print("No changes were found.")
-            else:
-                print("Nenhuma mudança foi encontrada.")
+        time.sleep(10)
+        clear_console()
 
     except Exception as e:
-        if language == '1':
-            print("An error occurred while updating the tool:", e)
-        else:
-            print("Ocorreu um erro ao atualizar a ferramenta:", e)
+        print(f"An error occurred while updating the tool: {e}")
 
 def main_menu():
     init(autoreset=True)
@@ -336,13 +309,13 @@ def main_menu():
                     print(Fore.CYAN + "1. Enter network to scan")
                     print(Fore.CYAN + "2. Scan own network")
                     print(Fore.CYAN + "3. Vulnerability scan mode")
-                    print(Fore.CYAN + "4. Update tool")
+                    print(Fore.CYAN + "4. Update Tool")
                     print(Fore.CYAN + "0. Back to main menu")
                 else:
                     print(Fore.CYAN + "1. Digite a rede para escanear")
                     print(Fore.CYAN + "2. Escanear a própria rede")
                     print(Fore.CYAN + "3. Modo de varredura de vulnerabilidades")
-                    print(Fore.CYAN + "4. Atualizar ferramenta")
+                    print(Fore.CYAN + "4. Atualizar Ferramenta")
                     print(Fore.CYAN + "0. Voltar ao menu principal")
                 print(Fore.CYAN + "*" * 50)
 
@@ -359,7 +332,6 @@ def main_menu():
                     vulnerability_scan_mode(language)
                 elif option == '4':
                     update_tool(language)
-                    clear_console()  # Limpa o console após atualização
                 else:
                     if language == '1':
                         print("Invalid option. Please choose again.")
