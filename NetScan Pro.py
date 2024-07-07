@@ -89,17 +89,13 @@ def update_tool_from_github(language):
         clear_console()
         print("NetScan Pro tool has been updated and restarted.")
 
-        # Fechando o CMD atual
         time.sleep(2)
-        subprocess.call(["cmd.exe", "/C", "exit"])
-
     except Exception as e:
         print(Fore.RED + f"Error updating the tool: {e}")
 
-    # Iniciando um novo CMD após a atualização
-    subprocess.Popen(["cmd.exe"], creationflags=subprocess.CREATE_NEW_CONSOLE)
+    # Retorna ao menu principal após a atualização
     time.sleep(3)
-    start_program()
+    main_menu(language)
 
 # Função para exibir o menu principal
 def main_menu(language):
@@ -299,10 +295,10 @@ def phone_number_info(language):
     clear_console()
     if language == '1':
         print("Phone Number Information")
-        print("Enter a phone number to get information(country code + operator area code):")
+        print("Enter a phone number to obtain information (country code + operator area code:")
     else:
         print("Informações de Número de Telefone")
-        print("Digite um número de telefone para obter informações(código do país + DDD da operadora):")
+        print("Digite um número de telefone para obter informações (código do país + DDD da operadora:")
 
     phone_number = input("Phone number: ")
 
