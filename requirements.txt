@@ -2,3 +2,4 @@ python-nmap
 colorama
 requests
 gitpython
+numlookupapi
