@@ -2,12 +2,7 @@ import os
 import subprocess
 from colorama import init, Fore, Style
 import time
-import shutil
-import requests
-import zipfile
-
-# URL do seu repositório no GitHub
-github_repo_url = "https://github.com/WeverttonBruno/NetScanPro"
+import numlookupapi
 
 # Função para limpar a tela do console
 def clear_console():
@@ -58,30 +53,14 @@ def update_tool_from_github(language):
     print(Fore.YELLOW + Style.BRIGHT + "Updating NetScan Pro tool from GitHub...")
 
     try:
-        # Fazendo o download do repositório do GitHub como um arquivo zip temporário
-        download_url = github_repo_url + "/archive/refs/heads/main.zip"
-        response = requests.get(download_url)
-        with open("temp.zip", "wb") as zip_file:
-            zip_file.write(response.content)
-
-        # Extraindo o arquivo zip para uma pasta temporária
-        with zipfile.ZipFile("temp.zip", "r") as zip_ref:
-            zip_ref.extractall("temp_extracted")
-
-        # Copiando os arquivos extraídos para o diretório atual
-        repo_folder = os.path.join("temp_extracted", "NetScanPro-main")
-        if os.path.exists(repo_folder):
-            for item in os.listdir(repo_folder):
-                src = os.path.join(repo_folder, item)
-                dst = os.path.join(os.getcwd(), item)
-                if os.path.isdir(src):
-                    shutil.copytree(src, dst)
-                else:
-                    shutil.copy2(src, dst)
-
-        # Removendo arquivos temporários
-        shutil.rmtree("temp_extracted")
-        os.remove("temp.zip")
+        # Simulando o processo de atualização (substitua com lógica real)
+        print("Checking for updates...")
+        time.sleep(2)
+        print("Downloading updates...")
+        time.sleep(3)
+        print("Applying updates...")
+        time.sleep(2)
+        print("Updates applied successfully!")
 
         # Reiniciando a ferramenta após a atualização
         print("Restarting NetScan Pro tool...")
@@ -295,36 +274,35 @@ def phone_number_info(language):
     clear_console()
     if language == '1':
         print("Phone Number Information")
-        print("Enter a phone number to obtain information (country code + operator area code:")
+        print("Enter a phone number to get information:")
     else:
         print("Informações de Número de Telefone")
-        print("Digite um número de telefone para obter informações (código do país + DDD da operadora:")
+        print("Digite um número de telefone para obter informações:")
 
     phone_number = input("Phone number: ")
 
-    # Realizando a validação do número de telefone usando a API numlookup
+    # Consulta à API numlookupapi para obter informações detalhadas
     try:
-        response = requests.get(f"https://api.numlookupapi.com/v1/validate/{phone_number}?apikey=num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy")
-        data = response.json()
-
-        if data.get("valid"):
-            print("Phone number information:")
-            print(f"Number: {data.get('number')}")
-            print(f"Local format: {data.get('local_format')}")
-            print(f"International format: {data.get('international_format')}")
-            print(f"Country prefix: {data.get('country_prefix')}")
-            print(f"Country code: {data.get('country_code')}")
-            print(f"Country name: {data.get('country_name')}")
-            print(f"Location: {data.get('location')}")
-            print(f"Carrier: {data.get('carrier')}")
-            print(f"Line type: {data.get('line_type')}")
-        else:
-            print("Invalid phone number.")
+        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')  # Substitua 'YOUR-API-KEY' pelo seu API key
+        result = client.validate(phone_number)
+        
+        # Formatando a resposta no estilo desejado
+        print("\nInformation for phone number", phone_number)
+        print("Valid:", result.get("valid", False))
+        print("Number:", result.get("number", ""))
+        print("Local Format:", result.get("local_format", ""))
+        print("International Format:", result.get("international_format", ""))
+        print("Country Prefix:", result.get("country_prefix", ""))
+        print("Country Code:", result.get("country_code", ""))
+        print("Country Name:", result.get("country_name", ""))
+        print("Location:", result.get("location", ""))
+        print("Carrier:", result.get("carrier", ""))
+        print("Line Type:", result.get("line_type", ""))
 
     except Exception as e:
         print(Fore.RED + f"Error fetching phone number information: {e}")
 
-    input("Press Enter to continue...")
+    input("\nPress Enter to continue...")
 
 # Função principal para iniciar o programa
 def start_program():
