@@ -2,6 +2,7 @@ import os
 import subprocess
 from colorama import init, Fore, Style
 import time
+import numlookupapi
 
 # Função para limpar a tela do console
 def clear_console():
@@ -280,14 +281,28 @@ def phone_number_info(language):
 
     phone_number = input("Phone number: ")
 
-    # Simulando a obtenção de informações do número de telefone
-    time.sleep(2)
-    print("Fetching information...")
-    time.sleep(3)
-    print(f"Information for phone number {phone_number}:")
-    print("Name: John Doe")
-    print("Location: New York")
-    input("Press Enter to continue...")
+    # Consulta à API numlookupapi para obter informações detalhadas
+    try:
+        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')  # Substitua 'YOUR-API-KEY' pelo seu API key
+        result = client.validate(phone_number)
+        
+        # Formatando a resposta no estilo desejado
+        print("\nInformation for phone number", phone_number)
+        print("Valid:", result.get("valid", False))
+        print("Number:", result.get("number", ""))
+        print("Local Format:", result.get("local_format", ""))
+        print("International Format:", result.get("international_format", ""))
+        print("Country Prefix:", result.get("country_prefix", ""))
+        print("Country Code:", result.get("country_code", ""))
+        print("Country Name:", result.get("country_name", ""))
+        print("Location:", result.get("location", ""))
+        print("Carrier:", result.get("carrier", ""))
+        print("Line Type:", result.get("line_type", ""))
+
+    except Exception as e:
+        print(Fore.RED + f"Error fetching phone number information: {e}")
+
+    input("\nPress Enter to continue...")
 
 # Função principal para iniciar o programa
 def start_program():
