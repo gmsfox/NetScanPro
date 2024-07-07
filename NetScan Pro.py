@@ -53,14 +53,9 @@ def update_tool_from_github(language):
     print(Fore.YELLOW + Style.BRIGHT + "Updating NetScan Pro tool from GitHub...")
 
     try:
-        # Simulando o processo de atualização (substitua com lógica real)
-        print("Checking for updates...")
-        time.sleep(2)
-        print("Downloading updates...")
-        time.sleep(3)
-        print("Applying updates...")
-        time.sleep(2)
-        print("Updates applied successfully!")
+        # Atualização usando Git
+        subprocess.run(["git", "pull", "https://github.com/WeverttonBruno/NetScanPro.git"])
+        print("NetScan Pro tool has been updated successfully!")
 
         # Reiniciando a ferramenta após a atualização
         print("Restarting NetScan Pro tool...")
@@ -246,28 +241,34 @@ def fake_login_pages(language):
         print("3. LinkedIn")
         print("0. Voltar para o Menu de Phishing")
 
-    choice = input("Enter your choice: ")
+    choice = input("Choose an option: ")
 
     if choice == '0':
         return
     elif choice in ['1', '2', '3']:
-        # Lógica para clonar o site escolhido e capturar as credenciais
-        print(f"Cloning website {choice}...")
-        time.sleep(3)
-        # Lógica para redirecionar para o site oficial e capturar as credenciais digitadas
-        print("Redirecting to the official website...")
-        time.sleep(2)
-        username = input("Enter username/email: ")
-        password = input("Enter password: ")
-
-        # Exibindo as credenciais capturadas
-        print("Credentials captured:")
-        print(f"Username/Email: {username}")
-        print(f"Password: {password}")
-        input("Press Enter to continue...")
-
+        clone_website(choice, language)
     else:
         handle_invalid_option(language)
+
+# Função para clonar um site para login falso
+def clone_website(choice, language):
+    clear_console()
+    website = ""
+    if choice == '1':
+        website = "Facebook"
+    elif choice == '2':
+        website = "Google"
+    elif choice == '3':
+        website = "LinkedIn"
+
+    if language == '1':
+        print(f"Cloning {website} for fake login...")
+    else:
+        print(f"Clonando {website} para login falso...")
+
+    # Lógica para clonar o site (simulado)
+    time.sleep(3)
+    input("Press Enter to continue...")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
@@ -277,7 +278,7 @@ def phone_number_info(language):
         print("Enter a phone number to obtain information (Country Code + Carrier area code):")
     else:
         print("Informações de Número de Telefone")
-        print("Digite um número de telefone para obter informações(Código do País + DDD da operadora 15 ):")
+        print("Digite um número de telefone para obter informações(Código do País + DDD da operadora):")
 
     phone_number = input("Phone number: ")
 
