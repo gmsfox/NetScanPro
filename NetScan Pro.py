@@ -298,7 +298,7 @@ def phone_number_info(language):
         print("Enter a phone number to obtain information (country code + operator area code:")
     else:
         print("Informações de Número de Telefone")
-        print("Digite um número de telefone para obter informações (código do páis + DDD da operadora:")
+        print("Digite um número de telefone para obter informações (código do país + DDD da operadora:")
 
     phone_number = input("Phone number: ")
 
