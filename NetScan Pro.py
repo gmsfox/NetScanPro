@@ -295,10 +295,10 @@ def phone_number_info(language):
     clear_console()
     if language == '1':
         print("Phone Number Information")
-        print("Enter a phone number to get information:")
+        print("Enter a phone number to obtain information (country code + operator area code:")
     else:
         print("Informações de Número de Telefone")
-        print("Digite um número de telefone para obter informações:")
+        print("Digite um número de telefone para obter informações (código do páis + DDD da operadora:")
 
     phone_number = input("Phone number: ")
 
