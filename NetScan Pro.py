@@ -11,7 +11,7 @@ import nmap
 from colorama import init, Fore, Style
 
 # Porta para o servidor HTTP local
-PORT = 8000
+PORT = 8080
 
 # Diretório onde os arquivos HTML e CSS serão armazenados
 HTML_CSS_DIR = 'html_css'
