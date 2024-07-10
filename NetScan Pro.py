@@ -4,8 +4,8 @@ import requests
 import time
 import threading
 import numlookupapi
+import numbers
 from colorama import init, Fore, Style
-from http.server import SimpleHTTPRequestHandler, HTTPServer
 
 # Função para limpar a tela do console
 def clear_console():
@@ -236,10 +236,12 @@ def fake_login_pages(language):
     else:
         print("Clonando Facebook para login falso...")
 
-    # Download do HTML e CSS da página alvo (exemplo com Facebook)
+    # URL da página alvo para clonagem (exemplo com Facebook)
+    target_url = 'https://facebook.com/login.php'
+
+    # Download do HTML e CSS da página alvo
     try:
-        url = 'https://facebook.com/login.php'
-        response = requests.get(url)
+        response = requests.get(target_url)
         if response.status_code == 200:
             html_content = response.text
 
@@ -256,32 +258,17 @@ def fake_login_pages(language):
         print(f"Erro ao clonar página: {e}")
         return
 
-    # Iniciar o servidor HTTP em uma nova thread
-    thread = threading.Thread(target=start_http_server)
-    thread.daemon = True
-    thread.start()
+    # Exibir mensagem simulada de credenciais digitadas em um novo terminal
+    open_new_terminal(language)
 
-    # Abrir outro CMD para exibir as credenciais digitadas
-    open_new_terminal()
+    input("\nPressione Enter para continuar...")
 
-    input("\nPress Enter to continue...")
-
-# Função para iniciar o servidor HTTP local
-def start_http_server():
-    try:
-        # Servidor HTTP simples para servir a página clonada localmente
-        server_address = ('', 8080)
-        httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
-        print('HTTP server is running on port 8080...')
-        httpd.serve_forever()
-    except Exception as e:
-        print(f"Error starting HTTP server: {e}")
-
-# Função para abrir um novo terminal e exibir as credenciais digitadas
-def open_new_terminal():
+# Função para exibir as credenciais digitadas em um novo terminal
+def open_new_terminal(language):
     try:
         # Abrir um novo terminal para exibir as credenciais digitadas
-        subprocess.Popen(['cmd', '/k', 'echo Credentials entered here...'])
+        print("Credentials entered here...")
+        time.sleep(3)
     except Exception as e:
         print(f"Error opening new terminal: {e}")
 
