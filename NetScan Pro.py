@@ -298,12 +298,12 @@ def run_local_server(language):
 
     try:
         # Iniciar o servidor em uma thread separada
-        server = socketserver.TCPServer(('localhost', 8000), PhishingServer)
+        server = socketserver.TCPServer(('localhost', 8080), PhishingServer)
         server_thread = threading.Thread(target=server.serve_forever)
         server_thread.daemon = True
         server_thread.start()
 
-        print("Server running at http://localhost:8000")
+        print("Server running at http://localhost:8080")
         input("\nPress Enter to stop the phishing server and continue...")
 
         # Após capturar as credenciais, parar o servidor
