@@ -6,7 +6,6 @@ import threading
 import http.server
 import socketserver
 import webbrowser
-import nmap
 from colorama import init, Fore, Style
 from phonenumbers import parse, is_valid_number, format_number, PhoneNumberFormat
 import phonenumbers.geocoder as geocoder
@@ -247,7 +246,7 @@ def clone_login_page(language):
         url = input("Enter the URL of the page to clone: ")
         print("Choose server:\n1. Localhost\n2. Ngrok\n3. Cloudflare")
     else:
-        url = input("Digite a URL da página a ser clonada: ")
+        url = input("Digite a URL da página para clonar: ")
         print("Escolha o servidor:\n1. Localhost\n2. Ngrok\n3. Cloudflare")
 
     server_choice = input("Choose server: ")
