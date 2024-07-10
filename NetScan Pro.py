@@ -6,18 +6,15 @@ import threading
 import http.server
 import socketserver
 import webbrowser
-import numbers
 import numlookupapi
+import nmap
 from colorama import init, Fore, Style
 
 # Porta para o servidor HTTP local
 PORT = 8000
 
-# URL da página alvo para clonagem
-TARGET_URL = "https://facebook.com/login.php"
-
-# Variável para verificar se a página já foi clonada
-page_cloned = False
+# Diretório onde os arquivos HTML e CSS serão armazenados
+HTML_CSS_DIR = 'html_css'
 
 # Função para limpar a tela do console
 def clear_console():
@@ -236,57 +233,52 @@ def phishing_menu(language):
         if choice == '0':
             return
         elif choice == '1':
-            fake_login_pages(language)
+            start_local_server(language)
         else:
             handle_invalid_option(language)
 
-# Função para as páginas de logins falsas
-def fake_login_pages(language):
-    global page_cloned
-
+# Função para iniciar o servidor local
+def start_local_server(language):
     clear_console()
     if language == '1':
-        print("Cloning Facebook for fake login...")
+        print("Starting local server...")
     else:
-        print("Clonando Facebook para login falso...")
+        print("Iniciando servidor local...")
 
+    # Definindo o manipulador do servidor
+    Handler = http.server.SimpleHTTPRequestHandler
+
+    # Iniciando o servidor HTTP local
+    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        print(f"Local server running on port {PORT}")
+
+        # URL da página alvo para clonagem
+        target_url = f"http://localhost:{PORT}/fake_login_page.html"
+
+        try:
+            # Abrindo a página clonada no navegador padrão
+            print("Opening fake login page in browser...")
+            time.sleep(2)
+            webbrowser.open(target_url)
+
+            # Exibir mensagem simulada de credenciais digitadas em um novo terminal
+            open_new_terminal(language)
+
+            input("\nPressione Enter para parar o servidor...")
+        except Exception as e:
+            print(Fore.RED + f"Erro ao abrir a página: {e}")
+
+    # Parando o servidor após o uso
+    httpd.shutdown()
+
+# Função para exibir as credenciais digitadas em um novo terminal
+def open_new_terminal(language):
     try:
-        if not page_cloned:
-            # Baixar HTML e CSS da página alvo
-            response = requests.get(TARGET_URL)
-            if response.status_code == 200:
-                html_content = response.text
-                # Salvar HTML localmente
-                with open('fake_login_page.html', 'w', encoding='utf-8') as f:
-                    f.write(html_content)
-                print("Página clonada com sucesso!")
-                page_cloned = True
-
-                # Iniciar servidor HTTP local para servir a página clonada
-                start_http_server(language)
-
-                # Simular mensagem de credenciais digitadas em um novo terminal
-                open_new_terminal(language)
-
-                # Redirecionar para a página oficial do Facebook após simulação
-                print("Redirecting to official Facebook page...")
-                time.sleep(3)  # Simulando redirecionamento
-                webbrowser.open("https://facebook.com")
-                input("\nPress Enter to continue...")
-            else:
-                print(Fore.RED + "Erro ao clonar página: HTTP status code", response.status_code)
-        else:
-            # Página já clonada, mensagem de aviso
-            if language == '1':
-                print("Fake login page already cloned.")
-            else:
-                print("Página de login falso já clonada.")
-            input("\nPress Enter to continue...")
-
+        # Abrir um novo terminal para exibir as credenciais digitadas
+        print("Credentials entered here...")
+        time.sleep(3)
     except Exception as e:
-        print(Fore.RED + f"Erro ao clonar página: {e}")
-
-    input("\nPress Enter to continue...")
+        print(Fore.RED + f"Error opening new terminal: {e}")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
@@ -322,36 +314,6 @@ def phone_number_info(language):
         print(Fore.RED + f"Error fetching phone number information: {e}")
 
     input("\nPress Enter to continue...")
-
-# Função para iniciar o servidor HTTP local
-def start_http_server(language):
-    try:
-        # Configurar e iniciar servidor HTTP local para servir arquivos HTML e CSS
-        Handler = http.server.SimpleHTTPRequestHandler
-        httpd = socketserver.TCPServer(("", PORT), Handler)
-
-        if language == '1':
-            print(Fore.GREEN + f"Local HTTP server started at http://localhost:{PORT}")
-            print("Press Ctrl+C to terminate the server.")
-        else:
-            print(Fore.GREEN + f"Servidor HTTP local iniciado em http://localhost:{PORT}")
-            print("Pressione Ctrl+C para encerrar o servidor.")
-
-        thread = threading.Thread(target=httpd.serve_forever)
-        thread.daemon = True
-        thread.start()
-
-    except Exception as e:
-        print(Fore.RED + f"Erro ao iniciar servidor HTTP local: {e}")
-
-# Função para exibir as credenciais digitadas em um novo terminal
-def open_new_terminal(language):
-    try:
-        # Simular mensagem de credenciais digitadas
-        print("Credentials entered here...")
-        time.sleep(3)
-    except Exception as e:
-        print(Fore.RED + f"Erro ao abrir novo terminal: {e}")
 
 # Função principal para iniciar o programa
 def start_program():
