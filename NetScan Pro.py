@@ -1,24 +1,8 @@
 import os
-import shutil
-import requests
-import http.server
-import socketserver
-import webbrowser
-import time
-import threading
-import http.server
-import socketserver
-import webbrowser
-import numlookupapi
-import nmap
 import subprocess
 from colorama import init, Fore, Style
-
-# Porta para o servidor HTTP local
-PORT = 8080
-
-# Diretório onde os arquivos HTML e CSS serão armazenados
-HTML_CSS_DIR = 'html_css'
+import time
+import numlookupapi
 
 # Função para limpar a tela do console
 def clear_console():
@@ -237,76 +221,54 @@ def phishing_menu(language):
         if choice == '0':
             return
         elif choice == '1':
-            start_local_server(language)
+            fake_login_pages(language)
         else:
             handle_invalid_option(language)
 
-# Função para iniciar o servidor local
-def start_local_server(language):
+# Função para as páginas de logins falsas
+def fake_login_pages(language):
     clear_console()
     if language == '1':
-        print("Starting local server...")
+        print("Choose a website to clone for fake login:")
+        print("1. Facebook")
+        print("2. Google")
+        print("3. LinkedIn")
+        print("0. Back to Phishing Menu")
     else:
-        print("Iniciando servidor local...")
+        print("Escolha um site para clonar para login falso:")
+        print("1. Facebook")
+        print("2. Google")
+        print("3. LinkedIn")
+        print("0. Voltar para o Menu de Phishing")
 
-    # Definindo o manipulador do servidor
-    Handler = http.server.SimpleHTTPRequestHandler
+    choice = input("Choose an option: ")
 
-    # Iniciando o servidor HTTP local
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        print(f"Local server running on port {PORT}")
+    if choice == '0':
+        return
+    elif choice in ['1', '2', '3']:
+        clone_website(choice, language)
+    else:
+        handle_invalid_option(language)
 
-        # URL da página alvo para clonagem
-        target_url = f"http://localhost:{PORT}/fake_login_page.html"
+# Função para clonar um site para login falso
+def clone_website(choice, language):
+    clear_console()
+    website = ""
+    if choice == '1':
+        website = "Facebook"
+    elif choice == '2':
+        website = "Google"
+    elif choice == '3':
+        website = "LinkedIn"
 
-        try:
-            # Baixando HTML e CSS da página alvo
-            download_html_css(target_url)
+    if language == '1':
+        print(f"Cloning {website} for fake login...")
+    else:
+        print(f"Clonando {website} para login falso...")
 
-            # Abrindo a página clonada no navegador padrão
-            print("Opening fake login page in browser...")
-            time.sleep(2)
-            webbrowser.open(target_url)
-
-            # Exibir mensagem simulada de credenciais digitadas em um novo terminal
-            open_new_terminal(language)
-
-            input("\nPressione Enter para parar o servidor...")
-        except Exception as e:
-            print(Fore.RED + f"Erro ao abrir a página: {e}")
-
-    # Parando o servidor após o uso
-    httpd.shutdown()
-
-    # Excluindo arquivos HTML e CSS
-    delete_html_css()
-
-def download_html_css(target_url):
-    # Criando diretório se não existir
-    if not os.path.exists(HTML_CSS_DIR):
-        os.makedirs(HTML_CSS_DIR)
-
-    # Obtendo conteúdo HTML e salvando no arquivo
-    response = requests.get(target_url)
-    if response.status_code == 200:
-        with open(os.path.join(HTML_CSS_DIR, 'fake_login_page.html'), 'wb') as f:
-            f.write(response.content)
-
-    # Opcional: Se houver CSS externo, baixe e salve no diretório HTML_CSS_DIR
-
-def delete_html_css():
-    # Excluindo diretório HTML_CSS_DIR e seu conteúdo
-    if os.path.exists(HTML_CSS_DIR):
-        shutil.rmtree(HTML_CSS_DIR)
-
-# Função para exibir as credenciais digitadas em um novo terminal
-def open_new_terminal(language):
-    try:
-        # Abrir um novo terminal para exibir as credenciais digitadas
-        print("Credentials entered here...")
-        time.sleep(3)
-    except Exception as e:
-        print(Fore.RED + f"Error opening new terminal: {e}")
+    # Lógica para clonar o site (simulado)
+    time.sleep(3)
+    input("Press Enter to continue...")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
