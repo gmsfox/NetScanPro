@@ -13,7 +13,7 @@ import phonenumbers.geocoder as geocoder
 import phonenumbers.carrier as carrier
 
 # Porta para o servidor HTTP local
-PORT = 8080
+PORT = 8000
 
 # Diretório onde os arquivos HTML e CSS serão armazenados
 HTML_CSS_DIR = 'html_css'
