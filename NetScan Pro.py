@@ -2,7 +2,11 @@ import os
 import subprocess
 from colorama import init, Fore, Style
 import time
+import requests
+import numbers
 import numlookupapi
+import nmap
+from bs4 import BeautifulSoup
 
 # Função para limpar a tela do console
 def clear_console():
@@ -229,44 +233,72 @@ def phishing_menu(language):
 def fake_login_pages(language):
     clear_console()
     if language == '1':
-        print("Choose a website to clone for fake login:")
-        print("1. Facebook")
-        print("2. Google")
-        print("3. LinkedIn")
-        print("0. Back to Phishing Menu")
+        print("Enter the URL of the website to clone for fake login:")
     else:
-        print("Escolha um site para clonar para login falso:")
-        print("1. Facebook")
-        print("2. Google")
-        print("3. LinkedIn")
-        print("0. Voltar para o Menu de Phishing")
+        print("Digite a URL do site para clonar para login falso:")
 
-    choice = input("Choose an option: ")
+    url = input("URL: ").strip()
 
-    if choice == '0':
-        return
-    elif choice in ['1', '2', '3']:
-        clone_website(choice, language)
+    # Perguntar qual servidor usar
+    server_choice = input("Choose a server to use (localhost, ngrok, etc.): ").strip().lower()
+
+    # Lógica para baixar o HTML e CSS uma vez
+    try:
+        # Baixar HTML e CSS da URL
+        download_website_files(url)
+
+        # Simular captura de credenciais
+        simulate_credential_capture(url, server_choice, language)
+
+    except Exception as e:
+        print(Fore.RED + f"Error: {e}")
+
+    input("\nPress Enter to continue...")
+
+# Função para baixar HTML e CSS da URL
+def download_website_files(url):
+    # Verificar se o diretório existe para armazenar os arquivos
+    if not os.path.exists('fake_login_pages'):
+        os.makedirs('fake_login_pages')
+
+    # Baixar HTML e CSS da URL fornecida
+    response = requests.get(url)
+    if response.status_code == 200:
+        # Extrair nome do site para salvar os arquivos
+        site_name = url.split('//')[-1].split('.')[0]
+        
+        # Salvar HTML
+        with open(f'fake_login_pages/{site_name}.html', 'w', encoding='utf-8') as f:
+            f.write(response.text)
+            print(f"HTML for {url} downloaded successfully.")
+
+        # Procurar CSS na página
+        soup = BeautifulSoup(response.text, 'html.parser')
+        css_links = soup.find_all('link', rel='stylesheet')
+
+        # Baixar CSS
+        for link in css_links:
+            css_url = link.get('href')
+            if css_url.startswith('http'):
+                css_response = requests.get(css_url)
+                if css_response.status_code == 200:
+                    css_filename = css_url.split('/')[-1]
+                    with open(f'fake_login_pages/{css_filename}', 'w', encoding='utf-8') as css_file:
+                        css_file.write(css_response.text)
+                        print(f"CSS {css_filename} for {url} downloaded successfully.")
+
     else:
-        handle_invalid_option(language)
+        raise Exception(f"Failed to download HTML from {url}")
 
-# Função para clonar um site para login falso
-def clone_website(choice, language):
+# Função para simular captura de credenciais
+def simulate_credential_capture(url, server_choice, language):
     clear_console()
-    website = ""
-    if choice == '1':
-        website = "Facebook"
-    elif choice == '2':
-        website = "Google"
-    elif choice == '3':
-        website = "LinkedIn"
-
     if language == '1':
-        print(f"Cloning {website} for fake login...")
+        print(f"Simulating credential capture for {url} using {server_choice} server...")
     else:
-        print(f"Clonando {website} para login falso...")
+        print(f"Simulando captura de credenciais para {url} usando servidor {server_choice}...")
 
-    # Lógica para clonar o site (simulado)
+    # Lógica para capturar credenciais (simulada)
     time.sleep(3)
     input("Press Enter to continue...")
 
