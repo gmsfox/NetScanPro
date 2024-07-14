@@ -1,11 +1,13 @@
 import os
 import subprocess
+import http.server
+import socketserver
+import threading
 from colorama import init, Fore, Style
 import time
 import numlookupapi
 import webbrowser
 import nmap
-import numbers
 
 # Função para limpar a tela do console
 def clear_console():
@@ -262,43 +264,54 @@ def clone_website(url, server_choice, language):
 # Função para baixar arquivos HTML e CSS do site
 def download_website_files(url, language):
     # Simular o download dos arquivos HTML e CSS
-    print(Fore.YELLOW + Style.BRIGHT + "Downloading HTML and CSS files from the website...")
+    print(Fore.YELLOW + Style.BRIGHT + "Downloading HTML and CSS files...")
 
-    time.sleep(3)
-    if language == '1':
-        print("HTML and CSS files downloaded successfully!")
-    else:
-        print("Arquivos HTML e CSS baixados com sucesso!")
+    # Nomear arquivos com base na URL ou nome da página
+    file_name = url.split('//')[-1].split('/')[0]
+    html_file = f"{file_name}.html"
+    css_file = f"{file_name}.css"
+
+    # Simular o download
+    time.sleep(2)
+    print(Fore.GREEN + f"HTML file '{html_file}' and CSS file '{css_file}' downloaded successfully!")
 
 # Função para servir a página clonada usando um servidor HTTP local
 def serve_cloned_page(url, server_choice, language):
-    clear_console()
-    if language == '1':
-        print("Serving cloned page using local HTTP server...")
-    else:
-        print("Servindo a página clonada usando o servidor HTTP local...")
+    # Selecionar a porta com base na escolha do servidor
+    port = 8000
 
-    # Lógica para servir a página clonada (simulado)
-    time.sleep(3)
-    if language == '1':
-        print("Cloned page is now live at http://localhost:8000/")
-    else:
-        print("Página clonada está disponível em http://localhost:8000/")
+    # Iniciar o servidor HTTP local
+    if server_choice == '1':
+        print(Fore.YELLOW + Style.BRIGHT + "Starting local HTTP server to serve cloned page...")
+        thread = threading.Thread(target=run_local_server, args=(port,))
+        thread.start()
+        time.sleep(2)
+        print(Fore.GREEN + f"Local HTTP server started at http://localhost:{port}/")
 
-# Função para abrir um novo terminal para mostrar as credenciais inseridas
+# Função para executar o servidor HTTP localmente
+def run_local_server(port):
+    Handler = http.server.SimpleHTTPRequestHandler
+    with socketserver.TCPServer(("", port), Handler) as httpd:
+        print(f"Server running at http://localhost:{port}/")
+        httpd.serve_forever()
+
+# Função para abrir um novo terminal e mostrar as credenciais inseridas
 def open_new_terminal(language):
     clear_console()
     if language == '1':
-        print("Opening new terminal to show entered credentials...")
+        print(Fore.GREEN + Style.BRIGHT + "Credentials entered:".center(50))
+        print("Username: user123")
+        print("Password: pass456")
     else:
-        print("Abrindo novo terminal para mostrar as credenciais inseridas...")
+        print(Fore.GREEN + Style.BRIGHT + "Credenciais inseridas:".center(50))
+        print("Nome de Usuário: user123")
+        print("Senha: pass456")
 
-    # Simulação de abrir um novo terminal
-    time.sleep(3)
-    if language == '1':
-        print("New terminal opened successfully!")
-    else:
-        print("Novo terminal aberto com sucesso!")
+    # Abrir um novo terminal ou janela para mostrar as credenciais
+    try:
+        subprocess.run(["start", "cmd", "/k"], shell=True, check=True)
+    except Exception as e:
+        print(Fore.RED + f"Error opening new terminal: {e}")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
@@ -335,18 +348,10 @@ def phone_number_info(language):
 
     input("\nPress Enter to continue...")
 
-# Função principal para iniciar o programa
-def start_program():
-    init(autoreset=True)
-    language = input("Choose language (1. English / 2. Portuguese): ")
-
-    if language not in ['1', '2']:
-        print("Invalid choice. Defaulting to English.")
-        language = '1'
-
-    welcome_message(language)
-    main_menu(language)
-
-# Início do programa
+# Inicialização do programa
 if __name__ == "__main__":
-    start_program()
+    init(autoreset=True)  # Inicialização do colorama
+    language = input("Choose language / Escolha o idioma:\n1. English\n2. Português\n\nChoice / Escolha: ")
+    welcome_message(language)
+    loading_screen()
+    main_menu(language)
