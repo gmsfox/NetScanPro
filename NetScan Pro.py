@@ -382,14 +382,6 @@ def phishing(language):
 
     clone_website(url, server_choice, language)
 
-# Inicialização do programa
-if __name__ == "__main__":
-    init(autoreset=True)  # Inicialização do colorama
-    language = input("Choose language / Escolha o idioma:\n1. English\n2. Português\n\nChoice / Escolha: ")
-
-    # Simulando a execução do programa com a opção 2 selecionada
-    fake_login_pages(language)
-
 # Função para informações de número de telefone
 def phone_number_info(language):
     clear_console()
