@@ -231,7 +231,6 @@ def phishing_menu(language):
         else:
             handle_invalid_option(language)
 
-
 # Função para as páginas de logins falsas
 def fake_login_pages(language):
     clear_console()
@@ -356,7 +355,6 @@ def clean_up_files():
     except Exception as e:
         print(f"Error cleaning up files: {e}")
 
-if __name__ == '__main__':
     try:
         # Iniciar o servidor em uma thread separada
         language = '1'  # Defina conforme necessário
