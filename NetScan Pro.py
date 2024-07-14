@@ -336,19 +336,17 @@ def phone_number_info(language):
     input("\nPress Enter to continue...")
 
 # Função principal para iniciar o programa
-def main():
-    # Inicialização do Colorama para cores no terminal
+def start_program():
     init(autoreset=True)
+    language = input("Choose language (1. English / 2. Portuguese): ")
 
-    # Exibindo a mensagem de boas-vindas
-    welcome_message('1')
+    if language not in ['1', '2']:
+        print("Invalid choice. Defaulting to English.")
+        language = '1'
 
-    # Carregando a tela inicial
-    loading_screen()
+    welcome_message(language)
+    main_menu(language)
 
-    # Exibindo o menu principal
-    main_menu('1')
-
-# Verifica se este arquivo está sendo executado diretamente e inicia o programa
+# Início do programa
 if __name__ == "__main__":
-    main()
+    start_program()
