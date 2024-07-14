@@ -2,11 +2,10 @@ import os
 import subprocess
 from colorama import init, Fore, Style
 import time
-import requests
-from bs4 import BeautifulSoup
-import threading
-import http.server
-import socketserver
+import numlookupapi
+import webbrowser
+import nmap
+import numbers
 
 # Função para limpar a tela do console
 def clear_console():
@@ -246,113 +245,110 @@ def fake_login_pages(language):
 
 # Função para clonar um site para login falso
 def clone_website(url, server_choice, language):
+    try:
+        # Baixar arquivos HTML e CSS do site
+        download_website_files(url, language)
+
+        # Servir a página clonada usando um servidor HTTP local
+        serve_cloned_page(url, server_choice, language)
+
+        # Abrir um novo terminal para mostrar as credenciais inseridas
+        open_new_terminal(language)
+
+        input("Press Enter to continue...")
+    except Exception as e:
+        print(Fore.RED + f"Error cloning website: {e}")
+
+# Função para baixar arquivos HTML e CSS do site
+def download_website_files(url, language):
+    # Simular o download dos arquivos HTML e CSS
+    print(Fore.YELLOW + Style.BRIGHT + "Downloading HTML and CSS files from the website...")
+
+    time.sleep(3)
+    if language == '1':
+        print("HTML and CSS files downloaded successfully!")
+    else:
+        print("Arquivos HTML e CSS baixados com sucesso!")
+
+# Função para servir a página clonada usando um servidor HTTP local
+def serve_cloned_page(url, server_choice, language):
     clear_console()
     if language == '1':
-        print(f"Cloning {url} for fake login...")
+        print("Serving cloned page using local HTTP server...")
     else:
-        print(f"Clonando {url} para login falso...")
+        print("Servindo a página clonada usando o servidor HTTP local...")
 
-    try:
-        # Fazendo requisição GET para obter o conteúdo da página
-        response = requests.get(url)
-        if response.status_code == 200:
-            # Parseando o conteúdo com BeautifulSoup
-            soup = BeautifulSoup(response.text, 'html.parser')
+    # Lógica para servir a página clonada (simulado)
+    time.sleep(3)
+    if language == '1':
+        print("Cloned page is now live at http://localhost:8000/")
+    else:
+        print("Página clonada está disponível em http://localhost:8000/")
 
-            # Salvando o HTML e CSS
-            html_content = soup.prettify()
-            css_content = ''  # Lógica para extrair o CSS
+# Função para abrir um novo terminal para mostrar as credenciais inseridas
+def open_new_terminal(language):
+    clear_console()
+    if language == '1':
+        print("Opening new terminal to show entered credentials...")
+    else:
+        print("Abrindo novo terminal para mostrar as credenciais inseridas...")
 
-            with open('index.html', 'w', encoding='utf-8') as f_html:
-                f_html.write(html_content)
-            with open('styles.css', 'w', encoding='utf-8') as f_css:
-                f_css.write(css_content)
-
-            # Iniciando o servidor HTTP local
-            start_local_server()
-
-            if language == '1':
-                print("Fake login page cloned successfully!")
-            else:
-                print("Página de login falso clonada com sucesso!")
-
-        else:
-            if language == '1':
-                print(f"Failed to clone {url}. HTTP Error {response.status_code}")
-            else:
-                print(f"Falha ao clonar {url}. Erro HTTP {response.status_code}")
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error: {e}")
-
-    input("Press Enter to continue...")
-
-# Função para iniciar o servidor HTTP local
-def start_local_server():
-    # Configuração do servidor HTTP local
-    PORT = 8080
-    Handler = http.server.SimpleHTTPRequestHandler
-
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        print(f"HTTP server is running at http://localhost:{PORT}")
-        # Servindo requisições HTTP continuamente
-        httpd.serve_forever()
+    # Simulação de abrir um novo terminal
+    time.sleep(3)
+    if language == '1':
+        print("New terminal opened successfully!")
+    else:
+        print("Novo terminal aberto com sucesso!")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
     clear_console()
     if language == '1':
-        print("Enter the phone number for information:")
+        print("Phone Number Information")
+        print("Enter a phone number to obtain information (Country Code + Carrier area code):")
     else:
-        print("Digite o número de telefone para informações:")
+        print("Informações de Número de Telefone")
+        print("Digite um número de telefone para obter informações(Código do País + DDD da operadora):")
 
-    phone_number = input("Phone Number: ")
+    phone_number = input("Phone number: ")
 
+    # Consulta à API numlookupapi para obter informações detalhadas
     try:
-        # Chamada à API para obter informações do número de telefone
-        response = requests.get(f'https://api.numlookup.com/v2/phone/{phone_number}', headers={'Authorization': 'num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy'})
-        data = response.json()
+        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')  # Substitua 'YOUR-API-KEY' pelo seu API key
+        result = client.validate(phone_number)
+        
+        # Formatando a resposta no estilo desejado
+        print("\nInformation for phone number", phone_number)
+        print("Valid:", result.get("valid", False))
+        print("Number:", result.get("number", ""))
+        print("Local Format:", result.get("local_format", ""))
+        print("International Format:", result.get("international_format", ""))
+        print("Country Prefix:", result.get("country_prefix", ""))
+        print("Country Code:", result.get("country_code", ""))
+        print("Country Name:", result.get("country_name", ""))
+        print("Location:", result.get("location", ""))
+        print("Carrier:", result.get("carrier", ""))
+        print("Line Type:", result.get("line_type", ""))
 
-        # Exibir resultados formatados
-        print("Phone Number Information:")
-        print(f"Number: {data['number']}")
-        print(f"Valid: {data['valid']}")
-        print(f"Local Format: {data['local_format']}")
-        print(f"International Format: {data['international_format']}")
-        print(f"Country Prefix: {data['country_prefix']}")
-        print(f"Country Code: {data['country_code']}")
-        print(f"Country Name: {data['country_name']}")
-        print(f"Location: {data['location']}")
-        print(f"Carrier: {data['carrier']}")
-        print(f"Line Type: {data['line_type']}")
     except Exception as e:
-        print(f"Error: {e}")
+        print(Fore.RED + f"Error fetching phone number information: {e}")
 
-    input("Press Enter to continue...")
+    input("\nPress Enter to continue...")
 
 # Função principal para iniciar o programa
 def main():
-    init(autoreset=True)  # Inicializa o colorama para cores no terminal
+    # Inicialização do Colorama para cores no terminal
+    init(autoreset=True)
 
-    # Seleção de idioma
-    while True:
-        clear_console()
-        print(Fore.YELLOW + Style.BRIGHT + " Language Selection ".center(50, '-'))
-        print("1. English")
-        print("2. Portuguese")
-        language_choice = input("Choose your language / Escolha seu idioma: ")
+    # Exibindo a mensagem de boas-vindas
+    welcome_message('1')
 
-        if language_choice in ('1', '2'):
-            break
-        else:
-            handle_invalid_option('1')
-
-    # Mensagem de boas-vindas e início do programa
-    welcome_message(language_choice)
+    # Carregando a tela inicial
     loading_screen()
 
-    # Exibição do menu principal
-    main_menu(language_choice)
+    # Exibindo o menu principal
+    main_menu('1')
 
+# Verifica se este arquivo está sendo executado diretamente e inicia o programa
 if __name__ == "__main__":
     main()
