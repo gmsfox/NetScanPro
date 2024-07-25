@@ -387,7 +387,7 @@ def run_local_server(target_url, language):
 
     except Exception as e:
         print(f"Error running local server: {e}")
-        
+
 # Função para informações de número de telefone
 def phone_number_info(language):
     clear_console()
@@ -402,7 +402,7 @@ def phone_number_info(language):
 
     # Consulta à API numlookupapi para obter informações detalhadas
     try:
-        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')  # Substitua 'YOUR-API-KEY' pelo seu API key
+        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')
         result = client.validate(phone_number)
         
         # Formatando a resposta no estilo desejado
