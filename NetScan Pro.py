@@ -412,6 +412,9 @@ def run_local_server(clone_dir, target_url, language):
 
         # Clean up the cloned files
         clean_up_files(clone_dir)
+        
+        # Redirecionar para a URL original
+        webbrowser.open(target_url)
 
     except Exception as e:
         print(f"Error running local server: {e}")
