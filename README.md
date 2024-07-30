@@ -1,7 +1,3 @@
-Para atualizar o README do seu projeto NetScan Pro com base no último código, aqui está a versão atualizada:
-
----
-
 ## NetScan Pro
 
 ### Visão Geral
