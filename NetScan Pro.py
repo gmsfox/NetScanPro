@@ -56,7 +56,7 @@ def loading_screen():
     print("Loading...")
     time.sleep(3)
     clear_console()
-    print(Style.BRIGHT + "@wbrunnno".center(100))
+    print(Style.BRIGHT + "@wbrunnno".center(60))
     time.sleep(1)
 
 # Função para atualizar a ferramenta do GitHub
