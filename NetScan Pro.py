@@ -269,7 +269,7 @@ def clone_website(url, server_choice, language):
 
     try:
         # Diretório para armazenar o conteúdo clonado
-        clone_dir = 'cloned_site'
+        clone_dir = 'arquivos clonados'
         os.makedirs(clone_dir, exist_ok=True)
 
         # Baixar o HTML
