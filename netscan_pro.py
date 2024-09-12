@@ -306,6 +306,40 @@ def fake_login_pages(user_language):
     except KeyboardInterrupt:
         print("Shutting down the server...")
         os.remove('fake_login.html')
+        
+def save_phone_number_info(phone_number, result, language):
+    # Define o nome do arquivo com base no número de telefone
+    filename = f"{phone_number}_info.txt"
+    
+    with open(filename, 'w') as file:
+        if language == '1':
+            # Escreve as informações em inglês
+            file.write(f"Information for phone number {phone_number}\n")
+            file.write(f"Valid: {result.get('valid', False)}\n")
+            file.write(f"Number: {result.get('number', '')}\n")
+            file.write(f"Local Format: {result.get('local_format', '')}\n")
+            file.write(f"International Format: {result.get('international_format', '')}\n")
+            file.write(f"Country Prefix: {result.get('country_prefix', '')}\n")
+            file.write(f"Country Code: {result.get('country_code', '')}\n")
+            file.write(f"Country Name: {result.get('country_name', '')}\n")
+            file.write(f"Location: {result.get('location', '')}\n")
+            file.write(f"Carrier: {result.get('carrier', '')}\n")
+            file.write(f"Line Type: {result.get('line_type', '')}\n")
+        else:
+            # Escreve as informações em português
+            file.write(f"Informações para o número de telefone {phone_number}\n")
+            file.write(f"Válido: {result.get('valid', False)}\n")
+            file.write(f"Número: {result.get('number', '')}\n")
+            file.write(f"Formato Local: {result.get('local_format', '')}\n")
+            file.write(f"Formato Internacional: {result.get('international_format', '')}\n")
+            file.write(f"Prefixo do País: {result.get('country_prefix', '')}\n")
+            file.write(f"Código do País: {result.get('country_code', '')}\n")
+            file.write(f"Nome do País: {result.get('country_name', '')}\n")
+            file.write(f"Localização: {result.get('location', '')}\n")
+            file.write(f"Operadora: {result.get('carrier', '')}\n")
+            file.write(f"Tipo de Linha: {result.get('line_type', '')}\n")
+    
+    print("Information saved to", filename)
 
 # Função para obter informações sobre números de telefone
 def phone_number_info(user_language):
