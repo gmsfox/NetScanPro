@@ -5,14 +5,9 @@ import socketserver
 import threading
 import numlookupapi
 import time
-import webbrowser
 import requests
 import urllib.parse
-import time
 import json
-import email
-import email.policy
-from io import BytesIO
 from bs4 import BeautifulSoup
 from colorama import init, Fore, Style
 
@@ -66,7 +61,8 @@ def update_tool_from_github(language):
 
     try:
         # Atualização usando Git
-        subprocess.run(["git", "pull", "https://github.com/WeverttonBruno/NetScanPro.git"])
+        subprocess.run(["git", "pull", "https://github.com/WeverttonBruno/NetScanPro.git"], 
+        check=True)
         print("NetScan Pro tool has been updated successfully!")
 
         # Reiniciando a ferramenta após a atualização
@@ -290,19 +286,22 @@ def clone_website(url, server_choice, language):
                 if 'stylesheet' in link.get('rel', []):
                     resource_url = urllib.parse.urljoin(url, link['href'])
                     resources.append(resource_url)
-                    download_resource(resource_url, url, os.path.join(clone_dir, os.path.basename(link['href'])))
+                    download_resource(resource_url, url, os.path.join
+                                      (clone_dir, os.path.basename(link['href'])))
 
             # Baixar JS
             for script in soup.find_all('script', src=True):
                 resource_url = urllib.parse.urljoin(url, script['src'])
                 resources.append(resource_url)
-                download_resource(resource_url, url, os.path.join(clone_dir, os.path.basename(script['src'])))
+                download_resource(resource_url, url, os.path.join
+                                  (clone_dir, os.path.basename(script['src'])))
 
             # Baixar Imagens
             for img in soup.find_all('img', src=True):
                 resource_url = urllib.parse.urljoin(url, img['src'])
                 resources.append(resource_url)
-                download_resource(resource_url, url, os.path.join(clone_dir, os.path.basename(img['src'])))
+                download_resource(resource_url, url, os.path.join
+                                  (clone_dir, os.path.basename(img['src'])))
 
             # Inject the capture script into the cloned HTML
             with open(html_file_path, 'r', encoding='utf-8') as file:
@@ -437,13 +436,15 @@ def phone_number_info(language):
         print("Enter a phone number to obtain information (Country Code + Carrier area code):")
     else:
         print("Informações de Número de Telefone")
-        print("Digite um número de telefone para obter informações(Código do País + DDD da operadora):")
+        print
+        ("Digite um número de telefone para obter informações(Código do País + DDD da operadora):")
 
     phone_number = input("Phone number: ")
 
     # Consulta à API numlookupapi para obter informações detalhadas
     try:
-        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')  # Substitua 'YOUR-API-KEY' pelo seu API key
+        client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')  
+        # Substitua 'YOUR-API-KEY' pelo seu API key
         result = client.validate(phone_number)
         
         # Formatando a resposta no estilo desejado
@@ -467,7 +468,8 @@ def phone_number_info(language):
 # Inicialização do programa
 if __name__ == "__main__":
     init(autoreset=True)  # Inicialização do colorama
-    language = input("Choose language / Escolha o idioma:\n1. English\n2. Português\n\nChoice / Escolha: ")
+    language = input
+    ("Choose language / Escolha o idioma:\n1. English\n2. Português\n\nChoice / Escolha: ")
     welcome_message(language)
     loading_screen()
     main_menu(language)
