@@ -338,8 +338,10 @@ def save_phone_number_info(phone_number, result, language):
             file.write(f"Localização: {result.get('location', '')}\n")
             file.write(f"Operadora: {result.get('carrier', '')}\n")
             file.write(f"Tipo de Linha: {result.get('line_type', '')}\n")
-    
-    print("Information saved to", filename)
+    if language == '1':
+        print("Information saved to", filename)
+    else:
+        print("Informações salvas em", filename)
 
 # Função para obter informações sobre números de telefone
 def phone_number_info(user_language):
