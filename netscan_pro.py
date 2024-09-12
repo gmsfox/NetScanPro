@@ -381,6 +381,9 @@ def phone_number_info(user_language):
             print("Localização:", result.get("location", ""))
             print("Operadora:", result.get("carrier", ""))
             print("Tipo de Linha:", result.get("line_type", ""))
+
+             # Salva as informações em um arquivo de texto
+            save_phone_number_info(phone_number, result, user_language)
             
     except Exception as e:
         print(Fore.RED + f"Error fetching phone number information: {e}")
