@@ -15,11 +15,7 @@ import http.server
 import socketserver
 import threading
 import time
-import urllib.parse
-import json
 import numlookupapi
-import requests
-from bs4 import BeautifulSoup
 from colorama import init, Fore, Style
 
 # Função para limpar a tela do console
@@ -29,6 +25,16 @@ def clear_console():
 
 # Função para exibir a mensagem de boas-vindas
 def welcome_message(user_language):
+    """
+    Exibe uma mensagem de boas-vindas com base no idioma selecionado pelo usuário.
+
+    Parameters:
+    user_language (str): O idioma escolhido pelo usuário. Deve ser '1' para inglês 
+    ou '2' para português.
+
+    Returns:
+    None
+    """
     clear_console()
     if user_language == '1':
         print(Fore.GREEN + Style.BRIGHT + "Welcome to the NetScan Pro tool!".center(50))
@@ -40,6 +46,16 @@ def welcome_message(user_language):
 
 # Função para exibir a mensagem de despedida
 def goodbye_message(user_language):
+    """
+    Exibe uma mensagem de agradecimento ao usuário com base no idioma selecionado.
+
+    Parameters:
+    user_language (str): O idioma escolhido pelo usuário. Deve ser '1' para inglês 
+    ou '2' para português.
+
+    Returns:
+    None
+    """
     clear_console()
     if user_language == '1':
         print(Fore.GREEN + Style.BRIGHT + "Thank you for using NetScan Pro tool!".center(50))
@@ -50,6 +66,16 @@ def goodbye_message(user_language):
 
 # Função para lidar com opções inválidas
 def handle_invalid_option(user_language):
+    """
+    Exibe uma mensagem de erro para uma opção inválida com base no idioma selecionado.
+
+    Parameters:
+    user_language (str): O idioma escolhido pelo usuário. Deve ser '1' para inglês
+                         ou '2' para português.
+
+    Returns:
+    None
+    """
     clear_console()
     if user_language == '1':
         print(Fore.RED + "Invalid option. Please choose again.")
@@ -59,6 +85,16 @@ def handle_invalid_option(user_language):
 
 # Função para exibir a mensagem de carregamento
 def loading_screen():
+    """
+    Exibe uma tela de carregamento temporária com uma mensagem.
+
+    A função imprime "Loading...", aguarda 3 segundos, limpa o console, exibe 
+    uma mensagem centralizada com estilo brilhante e aguarda mais 1 segundo 
+    antes de continuar.
+
+    Returns:
+    None
+    """
     print("Loading...")
     time.sleep(3)
     clear_console()
@@ -67,12 +103,24 @@ def loading_screen():
 
 # Função para atualizar a ferramenta do GitHub
 def update_tool_from_github(user_language):
+    """
+    Atualiza a ferramenta NetScan Pro a partir do repositório GitHub e reinicia a ferramenta.
+
+    Esta função executa um comando Git para atualizar o repositório da ferramenta, 
+    exibe mensagens de status de atualização e reinicia a ferramenta após a atualização.
+
+    Parâmetros:
+    user_language (str): O idioma escolhido pelo usuário ('1' para inglês, '2' para português).
+
+    Retorna:
+    None
+    """
     clear_console()
     print(Fore.YELLOW + Style.BRIGHT + "Updating NetScan Pro tool from GitHub...")
 
     try:
         # Atualização usando Git
-        subprocess.run(["git", "pull", "https://github.com/WeverttonBruno/NetScanPro.git"], 
+        subprocess.run(["git", "pull", "https://github.com/WeverttonBruno/NetScanPro.git"],
         check=True)
         print("NetScan Pro tool has been updated successfully!")
 
@@ -92,6 +140,19 @@ def update_tool_from_github(user_language):
 
 # Função para exibir o menu principal
 def main_menu(user_language):
+    """
+    Exibe o menu principal da ferramenta e gerencia a navegação para outras opções.
+
+    Este menu oferece opções para acessar ferramentas de rede, ferramentas de engenharia social, 
+    atualizar a ferramenta e sair. Dependendo da escolha do usuário, a função direciona o fluxo 
+    para a função correspondente ou lida com opções inválidas.
+
+    Parâmetros:
+    user_language (str): O idioma escolhido pelo usuário ('1' para inglês, '2' para português).
+
+    Retorna:
+    None
+    """
     while True:
         clear_console()
         if user_language == '1':
@@ -123,6 +184,19 @@ def main_menu(user_language):
 
 # Função para o menu de ferramentas de rede
 def network_tools_menu(user_language):
+    """
+    Exibe o menu de ferramentas de rede e gerencia a navegação para as opções disponíveis.
+
+    Este menu oferece opções para escanear uma rede, escanear a própria rede, realizar um 
+    escaneamento de vulnerabilidades e retornar ao menu principal. Dependendo da escolha do 
+    usuário, a função direciona o fluxo para a função correspondente ou lida com opções inválidas.
+
+    Parâmetros:
+    user_language (str): O idioma escolhido pelo usuário ('1' para inglês, '2' para português).
+
+    Retorna:
+    None
+    """
     while True:
         clear_console()
         if user_language == '1':
@@ -154,6 +228,18 @@ def network_tools_menu(user_language):
 
 # Função para entrar com o nome da rede
 def enter_network(user_language):
+    """
+    Solicita ao usuário o nome da rede para escanear e retorna o valor inserido.
+
+    Dependendo do idioma escolhido pelo usuário, a função exibe uma mensagem em inglês ou 
+    português solicitando o nome da rede.
+
+    Parâmetros:
+    user_language (str): O idioma escolhido pelo usuário ('1' para inglês, '2' para português).
+
+    Retorna:
+    str: O nome da rede inserido pelo usuário.
+    """
     clear_console()
     if user_language == '1':
         return input("Enter the network name: ")
@@ -162,6 +248,15 @@ def enter_network(user_language):
 
 # Função para o modo manual
 def manual_mode(user_language):
+    """
+    Exibe uma mensagem indicando que o escaneamento de rede está sendo realizado no modo manual.
+
+    Dependendo do idioma escolhido pelo usuário, a função exibe uma mensagem em inglês ou 
+    português indicando que o escaneamento está em andamento no modo manual.
+
+    Parâmetros:
+    user_language (str): O idioma escolhido pelo usuário ('1' para inglês, '2' para português).
+    """
     clear_console()
     if user_language == '1':
         print("Scanning network in manual mode...")
@@ -174,6 +269,15 @@ def manual_mode(user_language):
 
 # Função para escanear a própria rede
 def scan_own_network(user_language):
+    """
+    Exibe uma mensagem indicando que o escaneamento da própria rede está sendo realizado.
+
+    Dependendo do idioma escolhido pelo usuário, a função exibe uma mensagem em inglês ou 
+    português indicando que o escaneamento da própria rede está em andamento.
+
+    Parâmetros:
+    user_language (str): O idioma escolhido pelo usuário ('1' para inglês, '2' para português).
+    """
     clear_console()
     if user_language == '1':
         print("Scanning own network...")
@@ -186,6 +290,15 @@ def scan_own_network(user_language):
 
 # Função para o escaneamento de vulnerabilidades
 def vulnerability_scan_mode(user_language):
+    """
+    Exibe uma mensagem indicando que o escaneamento de vulnerabilidades está sendo realizado.
+
+    Dependendo do idioma escolhido pelo usuário, a função exibe uma mensagem em inglês ou 
+    português indicando que o escaneamento de vulnerabilidades está em andamento.
+
+    Parâmetros:
+    user_language (str): O idioma escolhido pelo usuário ('1' para inglês, '2' para português).
+    """
     clear_console()
     if user_language == '1':
         print("Vulnerability scanning...")
@@ -198,6 +311,17 @@ def vulnerability_scan_mode(user_language):
 
 # Função para o menu de ferramentas de engenharia social
 def social_engineering_tools(user_language):
+    """
+    Exibe o menu de ferramentas de engenharia social e lida com a seleção de opções.
+
+    Dependendo do idioma escolhido pelo usuário, a função exibe um menu com opções relacionadas
+    a ferramentas de engenharia social. Permite que o usuário escolha entre obter informações de
+    um número de telefone ou acessar a opção de phishing. Também oferece a opção de retornar ao
+    menu principal.
+
+    Parâmetros:
+    user_language (str): O idioma escolhido pelo usuário ('1' para inglês, '2' para português).
+    """
     while True:
         clear_console()
         if user_language == '1':
@@ -224,6 +348,16 @@ def social_engineering_tools(user_language):
 
 # Função para o submenu de phishing
 def phishing_menu(user_language):
+    """
+    Exibe o menu de phishing e lida com a seleção de opções.
+
+    Dependendo do idioma escolhido pelo usuário, a função exibe um menu com opções relacionadas
+    a phishing. Permite que o usuário escolha entre criar páginas de login falsas ou retornar
+    para as ferramentas de engenharia social. Também oferece a opção de retornar ao menu anterior.
+
+    Parâmetros:
+    user_language (str): O idioma escolhido pelo usuário ('1' para inglês, '2' para português).
+    """
     while True:
         clear_console()
         if user_language == '1':
@@ -246,6 +380,16 @@ def phishing_menu(user_language):
 
 # Função para as páginas de logins falsas
 def fake_login_pages(user_language):
+    """
+    Cria uma página de login falsa e inicia um servidor HTTP para servir a página.
+
+    Dependendo do idioma escolhido pelo usuário, a função solicita a URL do site a ser clonado
+    e cria uma página de login falsa. A página é salva localmente e um servidor HTTP é iniciado
+para servir essa página. O servidor continua a ser executado até que seja interrompido manualmente.
+
+    Parâmetros:
+    user_language (str): O idioma escolhido pelo usuário ('1' para inglês, '2' para português).
+    """
     clear_console()
     if user_language == '1':
         print("Enter the URL of the website to clone for fake login:")
@@ -306,11 +450,22 @@ def fake_login_pages(user_language):
     except KeyboardInterrupt:
         print("Shutting down the server...")
         os.remove('fake_login.html')
-        
+
 def save_phone_number_info(phone_number, result, language):
+    """
+    Salva as informações do número de telefone em um arquivo de texto.
+
+   O nome do arquivo é baseado no número de telefone fornecido. As informações são salvas no arquivo
+    em inglês ou português, dependendo do idioma selecionado.
+
+    Parâmetros:
+    phone_number (str): O número de telefone para o qual as informações serão salvas.
+    result (dict): Um dicionário contendo as informações detalhadas sobre o número de telefone.
+    language (str): O idioma escolhido pelo usuário ('1' para inglês, '2' para português).
+    """
     # Define o nome do arquivo com base no número de telefone
     filename = f"{phone_number}_info.txt"
-    
+
     with open(filename, 'w') as file:
         if language == '1':
             # Escreve as informações em inglês
@@ -345,19 +500,32 @@ def save_phone_number_info(phone_number, result, language):
 
 # Função para obter informações sobre números de telefone
 def phone_number_info(user_language):
+    """
+    Obtém informações detalhadas sobre um número de telefone e exibe os dados.
+
+    Dependendo do idioma selecionado pelo usuário, a função exibe as informações
+    sobre o número de telefone em inglês ou português. As informações são obtidas
+    através da API numlookupapi e, em seguida, salvas em um arquivo de texto.
+
+    Parâmetros:
+    user_language (str): O idioma selecionado pelo usuário ('1' para inglês, '2' para português).
+    """
     clear_console()
     if user_language == '1':
         print("Enter the phone number to get information:")
     else:
         print("Digite o número de telefone para obter informações:")
 
-    phone_number = input("Phone number: " if user_language == '1' else "Número de telefone: ")
-    
-    # Consulta à API numlookupapi para obter informações detalhadas
+    phone_number = input(
+    "Phone number: " if user_language == '1'
+    else "Número de telefone: "
+)   # Consulta à API numlookupapi para obter informações detalhadas
     try:
-        Client = numlookupapi.Client('num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy')  # Substitua 'YOUR-API-KEY' pelo seu API key
-        result = Client.validate(phone_number) # Ajuste a função de acordo com a documentação
-        
+        client = numlookupapi.Client(
+    'num_live_nPxUn5CQCi43HYw85qiaohr9FvykkoqCa1x8QkEy'  # Substitua 'YOUR-API-KEY' pelo seu API key
+    )
+        result = client.validate(phone_number) # Ajuste a função de acordo com a documentação
+
         # Formatando a resposta no estilo desejado
         if user_language == '1':
             print("\nInformation for phone number", phone_number)
@@ -386,13 +554,28 @@ def phone_number_info(user_language):
 
              # Salva as informações em um arquivo de texto
             save_phone_number_info(phone_number, result, user_language)
-            
+
     except Exception as e:
         print(Fore.RED + f"Error fetching phone number information: {e}")
 
-    input("\nPress Enter to continue..." if user_language == '1' else "\nPressione Enter para continuar...")
+    input(
+    "\nPress Enter to continue..." if user_language == '1'
+    else "\nPressione Enter para continuar..."
+)
 # Função principal para iniciar o programa
 def main():
+    """
+    Função principal que inicializa a aplicação, permite ao usuário selecionar o idioma,
+    exibe a mensagem de boas-vindas e exibe o menu principal.
+
+    O processo inclui:
+    1. Inicialização do terminal com configurações de cores.
+    2. Limpeza do console e exibição da seleção de idioma.
+    3. Captura da escolha do idioma do usuário.
+    4. Definição do idioma padrão se a escolha for inválida.
+    5. Exibição da mensagem de boas-vindas.
+    6. Exibição do menu principal com base na escolha do idioma.
+    """
     init(autoreset=True)
 
     # Selecionar o idioma
