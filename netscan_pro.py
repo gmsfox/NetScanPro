@@ -582,7 +582,7 @@ def main():
     clear_console()
     print(Fore.YELLOW + Style.BRIGHT + " Language Selection ".center(50, '-'))
     print("1. English")
-    print("2. Portuguese")
+    print("2. português")
 
     language_option = input("Choose your language: ")
 
