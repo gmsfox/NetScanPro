@@ -22,6 +22,24 @@ from colorama import init, Fore, Style
 def clear_console():
     """Clears the console screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
+    # Função para atualizar dependências do projeto
+def update_dependencies_crossplatform():
+    """
+    Atualiza as dependências do projeto e gera automaticamente o arquivo requirements.txt.
+    Funciona em qualquer sistema operacional.
+    """
+    clear_console()
+    print(Fore.YELLOW + Style.BRIGHT + "Atualizando dependências do projeto...")
+
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "colorama", "numlookupapi"])
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "pipreqs"])
+        subprocess.check_call([sys.executable, "-m", "pipreqs", ".", "--force", "--encoding=utf-8"])
+        print(Fore.GREEN + "[✔] requirements.txt atualizado com sucesso!")
+    except Exception as e:
+        print(Fore.RED + f"[!] Erro ao atualizar dependências: {e}")
+
+    input("\\nPressione Enter para continuar...")
 
 # Função para exibir a mensagem de boas-vindas
 def welcome_message(user_language):
@@ -119,7 +137,6 @@ def update_tool_from_github(user_language):
     print(Fore.YELLOW + Style.BRIGHT + "Updating NetScan Pro tool from GitHub...")
 
     try:
-        # Atualização usando Git
         subprocess.run(["git", "pull", "https://github.com/WeverttonBruno/NetScanPro.git"],
         check=True)
         print("NetScan Pro tool has been updated successfully!")
@@ -160,12 +177,14 @@ def main_menu(user_language):
             print("1. Network Tools")
             print("2. Social Engineering Tools")
             print("3. Update Tool")
+            print("4. Update Project Dependencies")
             print("0. Exit")
         else:
             print(Fore.YELLOW + Style.BRIGHT + " Menu Principal ".center(50, '-'))
             print("1. Ferramentas de Rede")
             print("2. Ferramentas de Engenharia Social")
             print("3. Atualizar Ferramenta")
+            print("4. Atualizar Dependências do Projeto")
             print("0. Sair")
 
         choice = input("Choose an option: ")
@@ -179,6 +198,8 @@ def main_menu(user_language):
             social_engineering_tools(user_language)
         elif choice == '3':
             update_tool_from_github(user_language)
+        elif choice == '4':
+            update_dependencies_crossplatform()
         else:
             handle_invalid_option(user_language)
 
