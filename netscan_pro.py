@@ -16,7 +16,6 @@ import socketserver
 import threading
 import time
 import sys
-import numlookupapi
 from colorama import init, Fore, Style
 
 # Função para limpar a tela do console
