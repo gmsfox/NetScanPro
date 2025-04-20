@@ -46,8 +46,7 @@ def goodbye_message(user_language: str) -> None:
     if user_language == LANGUAGE_EN:
         print(f"{Fore.GREEN}{Style.BRIGHT}{'Thank you for using NetScan Pro tool!'.center(50)}")
     else:
-        print(f"{Fore.GREEN}{Style.BRIGHT}"
-              f"{'Obrigado por usar a ferramenta NetScan Pro!'.center(50)}")
+        print(f"{Fore.GREEN}{Style.BRIGHT}{'Obrigado por usar a ferramenta NetScan Pro!'.center(50)}")
 
 
 @auto_clear
@@ -108,6 +107,15 @@ def update_dependencies_crossplatform() -> None:
     try:
         subprocess.run(["pipreqs", ".", "--force", "--encoding", "utf-8"], check=True)
         print(f"{Fore.GREEN}[✔] requirements.txt atualizado com sucesso!")
+    except FileNotFoundError:
+        print(f"{Fore.RED}pipreqs não encontrado. Instalando...")
+        try:
+            subprocess.run([sys.executable, "-m", "pip", "install", "pipreqs"], check=True)
+            subprocess.run(["pipreqs", ".", "--force", "--encoding", "utf-8"], check=True)
+            print(f"{Fore.GREEN}[✔] requirements.txt atualizado com sucesso!")
+        except subprocess.SubprocessError as e:
+            print(f"{Fore.RED}Erro ao instalar ou rodar pipreqs: {e}")
+            print(f"{Fore.YELLOW}Tente rodar o NetScanPro como administrador (sudo/Windows Admin)")
     except subprocess.SubprocessError as e:
         print(f"{Fore.RED}Erro ao atualizar dependências: {e}")
     time.sleep(3)
@@ -228,7 +236,9 @@ def vulnerability_scan_mode(user_language: str) -> None:
 def consultar_numero(phone_number: str, api_key: str) -> Optional[Dict[str, Any]]:
     """Consults the NumLookup API to validate a phone number."""
     try:
-        response = requests.get(f"https://api.numlookupapi.com/api/validate/{phone_number}?apikey={api_key}")
+        response = requests.get(
+            f"https://api.numlookupapi.com/api/validate/{phone_number}?apikey={api_key}"
+        )
         return response.json()
     except requests.RequestException:
         return None
