@@ -81,7 +81,7 @@ def handle_invalid_option(user_language: str) -> None:
 @auto_clear
 def loading_screen() -> None:
     """Displays loading animation."""
-    print(f"{Style.BRIGHT}{'@wbrunnno'.center(60)}")
+    print(f"{Style.BRIGHT}{'gmsfox'.center(60)}")
 
 def open_new_terminal(option: str) -> None:
     """Opens a new terminal window running specific command."""
