@@ -115,12 +115,12 @@ def update_tool_from_github() -> None:
     input(Fore.YELLOW + "Pressione Enter para voltar...")
 
 def update_dependencies_crossplatform() -> None:
-    """Atualiza dependências criando .venv se necessário."""
+    """Atualiza dependências criando .venv corretamente."""
     clear_console()
     print(Fore.YELLOW + "Atualizando dependências...")
 
     venv_path = ".venv"
-    python_bin = os.path.join(venv_path, "Scripts", "python.exe") if platform.system() == "Windows" else os.path.join(venv_path, "bin", "python")
+    python_bin = os.path.join(venv_path, "Scripts", "python.exe") if platform.system() == "Windows" else os.path.join(venv_path, "bin", "python3")
 
     try:
         if not os.path.exists(venv_path):
@@ -128,22 +128,18 @@ def update_dependencies_crossplatform() -> None:
             subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
             print(Fore.GREEN + "Virtualenv criada!")
 
-        print(Fore.CYAN + "Instalando pipreqs na virtualenv...")
+        # Instalar pipreqs no VENV
+        print(Fore.CYAN + "Instalando pipreqs dentro do ambiente virtual...")
         subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pip"], check=True)
         subprocess.run([python_bin, "-m", "pip", "install", "pipreqs"], check=True)
 
+        # Rodar pipreqs usando o Python da venv
         print(Fore.CYAN + "Gerando requirements.txt...")
         subprocess.run([python_bin, "-m", "pipreqs", ".", "--force", "--encoding", "utf-8"], check=True)
 
-        if os.path.exists("requirements.txt"):
-            with open("requirements.txt", "r", encoding="utf-8") as f:
-                lines = [line.strip() for line in f if line.strip()]
-            print(Fore.GREEN + f"✅ {len(lines)} pacotes adicionados ao requirements.txt!")
-        else:
-            print(Fore.RED + "requirements.txt não foi gerado!")
-
+        print(Fore.GREEN + "✅ requirements.txt atualizado com sucesso!")
     except subprocess.CalledProcessError as e:
-        log_error(f"Erro ao atualizar dependências: {e}")
+        log_error(f"Erro atualizando dependências: {e}")
         print(Fore.RED + f"Erro: {e}")
 
     input(Fore.YELLOW + "Pressione Enter para voltar ao menu...")
