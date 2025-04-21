@@ -10,7 +10,6 @@ import sys
 import logging
 import ctypes
 import requests
-import venv
 from colorama import init, Fore, Style
 
 LANGUAGE_EN = '1'
@@ -55,6 +54,7 @@ def ensure_admin_privileges() -> None:
 def ensure_venv_support() -> None:
     """Garante que o suporte a venv existe no sistema."""
     try:
+        import venv
     except ImportError:
         print(Fore.RED + "Seu sistema não possui suporte a ambientes virtuais (venv).")
         print(Fore.YELLOW + "Instale com: sudo apt install python3-venv")
