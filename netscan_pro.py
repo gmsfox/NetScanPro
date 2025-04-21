@@ -125,20 +125,29 @@ def update_dependencies_crossplatform() -> None:
     try:
         if not os.path.exists(venv_path):
             print(Fore.CYAN + "Criando ambiente virtual...")
-            subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
-            print(Fore.GREEN + "Virtualenv criada!")
+            process = subprocess.run([sys.executable, "-m", "venv", venv_path])
+            if process.returncode != 0:
+                raise RuntimeError("Falha ao criar virtualenv")
 
         # Instalar pipreqs no VENV
         print(Fore.CYAN + "Instalando pipreqs dentro do ambiente virtual...")
-        subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pip"], check=True)
-        subprocess.run([python_bin, "-m", "pip", "install", "pipreqs"], check=True)
+        process = subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pip"])
+        if process.returncode != 0:
+            raise RuntimeError("Falha ao atualizar pip")
+        
+        process = subprocess.run([python_bin, "-m", "pip", "install", "pipreqs"])
+        if process.returncode != 0:
+            raise RuntimeError("Falha ao instalar pipreqs")
 
-        # Rodar pipreqs usando o Python da venv
+        # Rodar pipreqs usando python_bin
         print(Fore.CYAN + "Gerando requirements.txt...")
-        subprocess.run([python_bin, "-m", "pipreqs", ".", "--force", "--encoding", "utf-8"], check=True)
+        process = subprocess.run([python_bin, "-m", "pipreqs", ".", "--force", "--encoding", "utf-8"])
+        if process.returncode != 0:
+            raise RuntimeError("Falha ao gerar requirements.txt")
 
         print(Fore.GREEN + "✅ requirements.txt atualizado com sucesso!")
-    except subprocess.CalledProcessError as e:
+
+    except Exception as e:
         log_error(f"Erro atualizando dependências: {e}")
         print(Fore.RED + f"Erro: {e}")
 
