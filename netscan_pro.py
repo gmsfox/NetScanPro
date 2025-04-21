@@ -93,13 +93,13 @@ def open_new_terminal(option: str) -> None:
         print(Fore.RED + f"Erro: {e}")
 
 def view_logs() -> None:
-    """Visualiza logs."""
+    """Visualiza logs de erro."""
     clear_console()
-    if os.path.exists(LOG_FILE):
+    if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > 0:
         with open(LOG_FILE, "r", encoding="utf-8") as f:
             print(f.read())
     else:
-        print("Nenhum log encontrado.")
+        print(Fore.RED + "Nenhum log encontrado.")
     input(Fore.YELLOW + "Pressione Enter para voltar...")
 
 def update_tool_from_github() -> None:
