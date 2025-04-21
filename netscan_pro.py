@@ -81,19 +81,12 @@ def handle_invalid_option(user_language: str) -> None:
 @auto_clear
 def loading_screen() -> None:
     """Displays loading animation."""
-    print(f"{Style.BRIGHT}{'gmsfox'.center(60)}")
+    print(f"{Style.BRIGHT}{'@wbrunnno'.center(60)}")
 
 def open_new_terminal(option: str) -> None:
     """Opens a new terminal window running specific command."""
     try:
-        if platform.system() == "Windows":
-            cmd = ["cmd", "/k", f"python {sys.argv[0]} --{option}"]
-        else:
-            cmd = [
-                "x-terminal-emulator",
-                "-e",
-                f"bash -c 'python3 {sys.argv[0]} --{option}; exec bash'"
-            ]
+        cmd = ["cmd", "/k", f"python {sys.argv[0]} --{option}"] if platform.system() == "Windows" else ["x-terminal-emulator", "-e", f"python3 {sys.argv[0]} --{option}"]
         subprocess.Popen(cmd)
     except subprocess.SubprocessError as e:
         log_error(f"Erro ao abrir novo terminal: {e}")
