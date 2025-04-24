@@ -91,7 +91,7 @@ def handle_invalid_option(user_language: str) -> None:
 @auto_clear
 def loading_screen() -> None:
     """Tela de carregamento."""
-    print(Style.BRIGHT + "@wbrunnno".center(60))
+    print(Style.BRIGHT + "@gmsfox".center(60))
 
 def open_new_terminal(option: str) -> None:
     """Abre nova janela de terminal."""
@@ -136,7 +136,7 @@ def update_dependencies_crossplatform() -> None:
     try:
         ensure_venv_support()
 
-        if not os.path.exists(venv_path):
+        if not os.path.exists(python_bin):
             print(Fore.CYAN + "Criando ambiente virtual...")
             subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
 
