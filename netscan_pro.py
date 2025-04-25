@@ -127,29 +127,51 @@ def update_tool_from_github() -> None:
     input(Fore.YELLOW + "Pressione Enter para voltar...")
 
 def update_dependencies_crossplatform() -> None:
-    """Atualiza dependências e gera requirements.txt."""
+    """Atualiza dependências e gera requirements.txt com compatibilidade multiplataforma."""
     clear_console()
     print(Fore.YELLOW + "Atualizando dependências...")
+
     venv_path = ".venv"
-    python_bin = os.path.join(venv_path, "Scripts", "python.exe") if platform.system() == "Windows" else os.path.join(venv_path, "bin", "python3")
+    python_bin = (
+        os.path.join(venv_path, "Scripts", "python.exe")
+        if platform.system() == "Windows"
+        else os.path.join(venv_path, "bin", "python3")
+    )
+    pipreqs_executable = (
+        os.path.join(venv_path, "Scripts", "pipreqs.exe")
+        if platform.system() == "Windows"
+        else os.path.join(venv_path, "bin", "pipreqs")
+    )
 
     try:
         ensure_venv_support()
 
-        if not os.path.exists(python_bin):
+        if not os.path.exists(venv_path):
             print(Fore.CYAN + "Criando ambiente virtual...")
             subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
 
-        print(Fore.CYAN + "Instalando pipreqs no ambiente virtual...")
-        subprocess.run([python_bin, "-m", "pip", "install", "pipreqs"], check=True)
+        print(Fore.CYAN + "Verificando se pipreqs está instalado...")
+        result = subprocess.run(
+            [python_bin, "-m", "pip", "show", "pipreqs"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if result.returncode != 0:
+            print(Fore.CYAN + "pipreqs não encontrado. Instalando...")
+            subprocess.run([python_bin, "-m", "pip", "install", "pipreqs"], check=True)
 
         print(Fore.CYAN + "Gerando requirements.txt...")
-        
-        subprocess.run([python_bin, "-m", "pipreqs", ".", "--force", "--encoding", "utf-8"], check=True)
+        subprocess.run([
+            pipreqs_executable, ".", "--force", "--encoding", "utf-8"
+        ], check=True)
 
-        print(Fore.GREEN + "[✔] Dependências atualizadas com sucesso!")
+        print(Fore.GREEN + "[✔] requirements.txt gerado com sucesso!")
+
+    except subprocess.CalledProcessError as e:
+        log_error(f"Erro ao atualizar dependências: {e}")
+        print(Fore.RED + f"Erro ao executar comando: {e}")
     except Exception as e:
-        log_error(f"Erro atualizando dependências: {e}")
+        log_error(f"Erro inesperado atualizando dependências: {e}")
         print(Fore.RED + f"Erro: {e}")
 
     input(Fore.YELLOW + "Pressione Enter para voltar...")
