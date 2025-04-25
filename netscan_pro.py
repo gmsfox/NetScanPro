@@ -145,11 +145,6 @@ def update_dependencies_crossplatform() -> None:
 
         print(Fore.CYAN + "Gerando requirements.txt...")
         
-        pipreqs_bin = (
-    os.path.join(venv_path, "Scripts", "pipreqs.exe")
-    if platform.system() == "Windows"
-    else os.path.join(venv_path, "bin", "pipreqs")
-)
         subprocess.run([python_bin, "-m", "pipreqs", ".", "--force", "--encoding", "utf-8"], check=True)
 
         print(Fore.GREEN + "[✔] Dependências atualizadas com sucesso!")
