@@ -91,7 +91,7 @@ def handle_invalid_option(user_language: str) -> None:
 @auto_clear
 def loading_screen() -> None:
     """Tela de carregamento."""
-    print(Style.BRIGHT + "@gmsfox".center(60))
+    print(Style.BRIGHT + "@wbrunnno".center(60))
 
 def open_new_terminal(option: str) -> None:
     """Abre nova janela de terminal."""
@@ -114,6 +114,41 @@ def view_logs() -> None:
         print(Fore.YELLOW + "Nenhum log encontrado.")
     input(Fore.YELLOW + "Pressione Enter para voltar...")
 
+def limpar_requirements(caminho_arquivo="requirements.txt") -> None:
+    """Limpa e organiza o arquivo requirements.txt removendo pacotes desnecessários."""
+    pacotes_invalidos = {
+        '__builtin__', '__pypy__', '_abcoll', '_cmsgpack', '_typeshed', '_winreg',
+        'htmlentitydefs', 'httplib', 'Queue', 'StringIO', 'urlparse', 'xmlrpclib',
+        'dummy_thread', 'ntlm', 'java', 'js', 'pyodide', 'thread', 'urllib2',
+        'ctags', 'tomllib'
+    }
+
+    try:
+        with open(caminho_arquivo, "r", encoding="utf-8") as arquivo:
+            linhas = arquivo.readlines()
+
+        pacotes_validos = []
+        vistos = set()
+
+        for linha in linhas:
+            pacote = linha.strip()
+            if not pacote:
+                continue
+            nome = pacote.split("==")[0] if "==" in pacote else pacote
+            if nome not in pacotes_invalidos and nome not in vistos:
+                pacotes_validos.append(pacote)
+                vistos.add(nome)
+
+        pacotes_validos.sort()
+
+        with open(caminho_arquivo, "w", encoding="utf-8") as arquivo:
+            arquivo.write("\n".join(pacotes_validos) + "\n")
+
+        print(Fore.GREEN + "[✔] requirements.txt limpo e atualizado com sucesso!")
+    except Exception as erro:
+        log_error(f"Erro ao limpar requirements.txt: {erro}")
+        print(Fore.RED + f"[✘] Erro ao limpar requirements.txt: {erro}")
+
 def update_tool_from_github() -> None:
     """Atualiza o projeto via GitHub."""
     clear_console()
@@ -127,21 +162,11 @@ def update_tool_from_github() -> None:
     input(Fore.YELLOW + "Pressione Enter para voltar...")
 
 def update_dependencies_crossplatform() -> None:
-    """Atualiza dependências e gera requirements.txt com compatibilidade multiplataforma."""
+    """Atualiza dependências e gera requirements.txt."""
     clear_console()
     print(Fore.YELLOW + "Atualizando dependências...")
-
     venv_path = ".venv"
-    python_bin = (
-        os.path.join(venv_path, "Scripts", "python.exe")
-        if platform.system() == "Windows"
-        else os.path.join(venv_path, "bin", "python3")
-    )
-    pipreqs_executable = (
-        os.path.join(venv_path, "Scripts", "pipreqs.exe")
-        if platform.system() == "Windows"
-        else os.path.join(venv_path, "bin", "pipreqs")
-    )
+    python_bin = os.path.join(venv_path, "Scripts", "python.exe") if platform.system() == "Windows" else os.path.join(venv_path, "bin", "python3")
 
     try:
         ensure_venv_support()
@@ -151,27 +176,16 @@ def update_dependencies_crossplatform() -> None:
             subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
 
         print(Fore.CYAN + "Verificando se pipreqs está instalado...")
-        result = subprocess.run(
-            [python_bin, "-m", "pip", "show", "pipreqs"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        if result.returncode != 0:
-            print(Fore.CYAN + "pipreqs não encontrado. Instalando...")
-            subprocess.run([python_bin, "-m", "pip", "install", "pipreqs"], check=True)
+        subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pipreqs"], check=True)
 
         print(Fore.CYAN + "Gerando requirements.txt...")
-        subprocess.run([
-            pipreqs_executable, ".", "--force", "--encoding", "utf-8"
-        ], check=True)
+        subprocess.run([python_bin, "-m", "pipreqs", ".", "--force", "--encoding", "utf-8"], check=True)
 
-        print(Fore.GREEN + "[✔] requirements.txt gerado com sucesso!")
+        limpar_requirements()
 
-    except subprocess.CalledProcessError as e:
-        log_error(f"Erro ao atualizar dependências: {e}")
-        print(Fore.RED + f"Erro ao executar comando: {e}")
+        print(Fore.GREEN + "[✔] requirements.txt atualizado com sucesso!")
     except Exception as e:
-        log_error(f"Erro inesperado atualizando dependências: {e}")
+        log_error(f"Erro atualizando dependências: {e}")
         print(Fore.RED + f"Erro: {e}")
 
     input(Fore.YELLOW + "Pressione Enter para voltar...")
