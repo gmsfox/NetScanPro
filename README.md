@@ -29,7 +29,7 @@ NetScan Pro é uma ferramenta avançada para escaneamento de rede e engenharia s
 2. **Clonar o Repositório:**
    - Abra o Prompt de Comando (CMD) e execute:
      ```sh
-     git clone https://github.com/WeverttonBruno/NetScanPro
+     git clone https://github.com/gmsfox/NetScanPro
      cd NetScanPro
      ```
 
@@ -56,7 +56,7 @@ NetScan Pro é uma ferramenta avançada para escaneamento de rede e engenharia s
 3. **Clonar o Repositório e Instalar Dependências:**
    - Clone o repositório e instale as dependências:
      ```sh
-     git clone https://github.com/WeverttonBruno/NetScanPro
+     git clone https://github.com/gmsfox/NetScanPro
      cd NetScanPro
      pip3 install -r requirements.txt
      ```
@@ -78,11 +78,11 @@ NetScan Pro é uma ferramenta avançada para escaneamento de rede e engenharia s
    - A opção "Atualizar Ferramenta do GitHub" verifica novos arquivos ou código atualizado, exibindo o progresso e reiniciando após a atualização.
 
 ### Contribuição
-- Contribuições são bem-vindas! Envie suas pull requests no [GitHub](https://github.com/WeverttonBruno/NetScanPro).
+- Contribuições são bem-vindas! Envie suas pull requests no [GitHub](https://github.com/gmsfox/NetScanPro).
 
 ### Licença
 Este projeto é licenciado sob a [Apache-2.0 License](LICENSE).
 
-Para mais informações e feedback, visite nosso repositório no [GitHub](https://github.com/WeverttonBruno/NetScanPro).
+Para mais informações e feedback, visite nosso repositório no [GitHub](https://github.com/gmsfox/NetScanPro).
 
 **NetScan Pro Team**
