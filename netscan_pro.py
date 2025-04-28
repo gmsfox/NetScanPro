@@ -52,14 +52,26 @@ def ensure_admin_privileges() -> None:
         sys.exit(1)
 
 def ensure_venv_support() -> None:
-    """Garante que o suporte a venv existe no sistema."""
+    """Garante que o suporte a ambientes virtuais (venv) está disponível."""
     try:
-        import venv
+        import venv  # Tenta importar
     except ImportError:
-        print(Fore.RED + "Seu sistema não possui suporte a ambientes virtuais (venv).")
-        print(Fore.YELLOW + "Instale com: sudo apt install python3-venv")
-        input(Fore.YELLOW + "Pressione Enter para sair...")
-        sys.exit(1)
+        print(Fore.RED + "Módulo 'venv' não encontrado. Tentando instalar automaticamente...")
+        try:
+            if platform.system() == "Linux":
+                subprocess.run(["sudo", "apt", "update"], check=True)
+                subprocess.run(["sudo", "apt", "install", "-y", "python3-venv"], check=True)
+                print(Fore.GREEN + "Pacote python3-venv instalado com sucesso!")
+                import venv  # Tenta importar de novo
+            else:
+                print(Fore.RED + "Instalação automática de venv não suportada neste sistema.")
+                input(Fore.YELLOW + "Pressione Enter para sair...")
+                sys.exit(1)
+        except subprocess.SubprocessError as install_error:
+            log_error(f"Erro instalando python3-venv: {install_error}")
+            print(Fore.RED + f"Erro instalando python3-venv: {install_error}")
+            input(Fore.YELLOW + "Pressione Enter para sair...")
+            sys.exit(1)
 
 def auto_clear(func):
     """Decorator que limpa a tela antes de executar funções."""
