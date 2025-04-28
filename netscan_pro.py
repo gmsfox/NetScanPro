@@ -52,17 +52,21 @@ def ensure_admin_privileges() -> None:
         sys.exit(1)
 
 def ensure_venv_support() -> None:
-    """Garante que o suporte a ambientes virtuais (venv) está disponível."""
+    """Garante que o suporte a ambientes virtuais (venv) está disponível e funcional."""
+    temp_venv_path = ".temp_venv_test"
+
     try:
-        import venv  # Tenta importar
-    except ImportError:
-        print(Fore.RED + "Módulo 'venv' não encontrado. Tentando instalar automaticamente...")
+        subprocess.run([sys.executable, "-m", "venv", temp_venv_path], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Se chegou aqui, venv está funcionando
+        if os.path.exists(temp_venv_path):
+            subprocess.run(["rm", "-rf", temp_venv_path], check=False)  # Remove o venv de teste no Linux
+    except subprocess.SubprocessError:
+        print(Fore.RED + "Ambiente virtual (venv) não funcional. Tentando instalar automaticamente...")
         try:
             if platform.system() == "Linux":
                 subprocess.run(["sudo", "apt", "update"], check=True)
                 subprocess.run(["sudo", "apt", "install", "-y", "python3-venv"], check=True)
                 print(Fore.GREEN + "Pacote python3-venv instalado com sucesso!")
-                import venv  # Tenta importar de novo
             else:
                 print(Fore.RED + "Instalação automática de venv não suportada neste sistema.")
                 input(Fore.YELLOW + "Pressione Enter para sair...")
