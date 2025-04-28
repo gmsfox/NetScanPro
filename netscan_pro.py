@@ -154,7 +154,7 @@ def update_tool_from_github() -> None:
     clear_console()
     print(Fore.YELLOW + "Atualizando o NetScan Pro...")
     try:
-        subprocess.run(["git", "pull", "https://github.com/WeverttonBruno/NetScanPro.git"], check=True)
+        subprocess.run(["git", "pull", "https://github.com/gmsfox/NetScanPro.git"], check=True)
         print(Fore.GREEN + "Atualizado com sucesso!")
     except subprocess.SubprocessError as e:
         log_error(f"Erro ao atualizar ferramenta: {e}")
