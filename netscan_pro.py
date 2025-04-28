@@ -162,33 +162,45 @@ def update_tool_from_github() -> None:
     input(Fore.YELLOW + "Pressione Enter para voltar...")
 
 def update_dependencies_crossplatform() -> None:
-    """Atualiza dependências e gera requirements.txt."""
+    """Atualiza dependências e gera requirements.txt de forma segura."""
     clear_console()
     print(Fore.YELLOW + "Atualizando dependências...")
+
     venv_path = ".venv"
-    python_bin = os.path.join(venv_path, "Scripts", "python.exe") if platform.system() == "Windows" else os.path.join(venv_path, "bin", "python3")
 
     try:
         ensure_venv_support()
 
+        # 1. Verifica se a venv existe, senão cria
         if not os.path.exists(venv_path):
-            print(Fore.CYAN + "Criando ambiente virtual...")
+            print(Fore.CYAN + "Criando ambiente virtual (.venv)...")
             subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
 
-        print(Fore.CYAN + "Verificando se pipreqs está instalado...")
+        # 2. Define o python_bin corretamente após garantir que a venv existe
+        python_bin = (
+            os.path.join(venv_path, "Scripts", "python.exe")
+            if platform.system() == "Windows"
+            else os.path.join(venv_path, "bin", "python3")
+        )
+
+        # 3. Instala ou atualiza pipreqs
+        print(Fore.CYAN + "Instalando/Atualizando pipreqs...")
         subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pipreqs"], check=True)
 
+        # 4. Gera o requirements.txt usando pipreqs
         print(Fore.CYAN + "Gerando requirements.txt...")
         subprocess.run([python_bin, "-m", "pipreqs", ".", "--force", "--encoding", "utf-8"], check=True)
 
+        # 5. Limpa pacotes desnecessários
         limpar_requirements()
 
-        print(Fore.GREEN + "[✔] requirements.txt atualizado com sucesso!")
+        print(Fore.GREEN + "[✔] Dependências atualizadas e requirements.txt gerado com sucesso!")
+
     except Exception as e:
         log_error(f"Erro atualizando dependências: {e}")
-        print(Fore.RED + f"Erro: {e}")
+        print(Fore.RED + f"[✘] Erro ao atualizar dependências: {e}")
 
-    input(Fore.YELLOW + "Pressione Enter para voltar...")
+    input(Fore.YELLOW + "Pressione Enter para voltar ao menu...")
 
 def main_menu(user_language: str) -> None:
     """Exibe o menu principal."""
