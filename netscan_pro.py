@@ -168,6 +168,26 @@ def update_tool_from_github() -> None:
         log_error(f"Erro ao atualizar ferramenta: {e}")
         print(Fore.RED + f"Erro: {e}")
     input(Fore.YELLOW + "Pressione Enter para voltar...")
+    
+def find_venv_python_executable(venv_path: str) -> str:
+    """Procura automaticamente o executável Python dentro da venv."""
+    possible_paths = [
+        os.path.join(venv_path, "bin", "python3"),
+        os.path.join(venv_path, "bin", "python"),
+        os.path.join(venv_path, "Scripts", "python.exe"),
+    ]
+
+    for path in possible_paths:
+        if os.path.exists(path):
+            return path
+
+    for root, dirs, files in os.walk(venv_path):
+        for file in files:
+            if file.startswith("python") and os.access(os.path.join(root, file), os.X_OK):
+                return os.path.join(root, file)
+
+    raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {venv_path}")
+
 
 def update_dependencies_crossplatform() -> None:
     """Atualiza dependências e gera requirements.txt de forma segura e inteligente."""
@@ -183,23 +203,16 @@ def update_dependencies_crossplatform() -> None:
             print(Fore.CYAN + "Criando ambiente virtual (.venv)...")
             subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
 
-        # Define o python_bin
-        python_bin = (
-            os.path.join(venv_path, "Scripts", "python.exe")
-            if platform.system() == "Windows"
-            else os.path.join(venv_path, "bin", "python3")
-        )
-
-        # Aguarda de forma mais segura até 30 segundos
         print(Fore.CYAN + "Verificando criação do ambiente virtual...")
-        for tentativas in range(30):
-            if os.path.isfile(python_bin):
-                print(Fore.GREEN + "Ambiente virtual pronto!")
+        for i in range(30):
+            try:
+                python_bin = find_venv_python_executable(venv_path)
                 break
-            print(Fore.YELLOW + f"Aguardando ambiente virtual ({tentativas + 1}s)...")
-            time.sleep(1)
+            except FileNotFoundError:
+                print(Fore.YELLOW + f"Aguardando ambiente virtual ({i+1}s)...")
+                time.sleep(1)
         else:
-            raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {python_bin}")
+            raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {venv_path}")
 
         print(Fore.CYAN + "Instalando/Atualizando pipreqs...")
         subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pipreqs"], check=True)
