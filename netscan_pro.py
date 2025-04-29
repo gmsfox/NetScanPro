@@ -201,27 +201,29 @@ def update_dependencies_crossplatform() -> None:
     venv_path = ".venv"
     is_windows = platform.system() == "Windows"
     python_bin = (
-        os.path.join(venv_path, "Scripts", "python.exe")
-        if is_windows else os.path.join(venv_path, "bin", "python3")
+        os.path.join(venv_path, "Scripts", "python.exe") if is_windows
+        else os.path.join(venv_path, "bin", "python3")
     )
 
     try:
         ensure_venv_support()
 
-        if not os.path.exists(venv_path):
+        # Cria .venv se não existir
+        if not os.path.exists(python_bin):
             print(Fore.CYAN + "Criando ambiente virtual (.venv)...")
             subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
 
+        # Aguarda até 30s o executável estar disponível
         print(Fore.CYAN + "Verificando criação do ambiente virtual...")
         for i in range(30):
-            if os.path.exists(python_bin):
+            if os.path.isfile(python_bin):
                 break
-            print(Fore.YELLOW + f"Aguardando ambiente virtual ({i+1}s)...")
+            print(Fore.YELLOW + f"Aguardando ambiente virtual ({i + 1}s)...")
             time.sleep(1)
         else:
             raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {python_bin}")
 
-        # Garantir permissões corretas no Linux
+        # Ajusta permissão no Linux
         if not is_windows:
             subprocess.run(["chmod", "+x", python_bin], check=False)
 
