@@ -68,7 +68,7 @@ def ensure_venv_support() -> None:
             print(Fore.YELLOW + "Tente instalar manualmente: sudo apt install python3-venv")
             input(Fore.YELLOW + "Pressione Enter para sair...")
             sys.exit(1)
-
+            
 def auto_clear(func):
     """Decorator que limpa a tela antes de executar funções."""
     def wrapper(*args, **kwargs):
