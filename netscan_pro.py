@@ -51,23 +51,21 @@ def ensure_admin_privileges() -> None:
         print(Fore.RED + f"Erro: {e}")
         sys.exit(1)
 
-def ensure_venv_exists(venv_path=".venv") -> None:
-    """Garante que o ambiente virtual exista, criando-o se necessário."""
-    if os.path.exists(venv_path):
-        return
-
-    print(Fore.CYAN + "Criando ambiente virtual (.venv)...")
+def ensure_venv_support() -> None:
+    """Garante que o suporte a venv existe no sistema."""
     try:
-        subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
-    except subprocess.CalledProcessError:
-        print(Fore.YELLOW + "Falha ao criar venv. Tentando instalar o módulo python3-venv...")
+        import venv
+    except ImportError:
+        print(Fore.RED + "Seu sistema não possui suporte a ambientes virtuais (venv).")
+        print(Fore.YELLOW + "Tentando instalar automaticamente...")
         try:
             subprocess.run(["sudo", "apt", "update"], check=True)
             subprocess.run(["sudo", "apt", "install", "-y", "python3-venv"], check=True)
-            subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
-        except Exception as e:
-            log_error(f"Erro instalando python3-venv: {e}")
-            print(Fore.RED + f"[✘] Falha ao instalar venv: {e}")
+            print(Fore.GREEN + "python3-venv instalado com sucesso!")
+        except subprocess.SubprocessError as e:
+            log_error(f"Erro instalando python3-venv automaticamente: {e}")
+            print(Fore.RED + f"Erro instalando python3-venv: {e}")
+            print(Fore.YELLOW + "Tente instalar manualmente: sudo apt install python3-venv")
             input(Fore.YELLOW + "Pressione Enter para sair...")
             sys.exit(1)
 
