@@ -51,29 +51,23 @@ def ensure_admin_privileges() -> None:
         print(Fore.RED + f"Erro: {e}")
         sys.exit(1)
 
-def ensure_venv_support() -> None:
-    """Garante que o suporte a ambientes virtuais (venv) está disponível e funcional."""
-    temp_venv_path = ".temp_venv_test"
+def ensure_venv_exists(venv_path=".venv") -> None:
+    """Garante que o ambiente virtual exista, criando-o se necessário."""
+    if os.path.exists(venv_path):
+        return
 
+    print(Fore.CYAN + "Criando ambiente virtual (.venv)...")
     try:
-        subprocess.run([sys.executable, "-m", "venv", temp_venv_path], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        # Se chegou aqui, venv está funcionando
-        if os.path.exists(temp_venv_path):
-            subprocess.run(["rm", "-rf", temp_venv_path], check=False)  # Remove o venv de teste no Linux
-    except subprocess.SubprocessError:
-        print(Fore.RED + "Ambiente virtual (venv) não funcional. Tentando instalar automaticamente...")
+        subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
+    except subprocess.CalledProcessError:
+        print(Fore.YELLOW + "Falha ao criar venv. Tentando instalar o módulo python3-venv...")
         try:
-            if platform.system() == "Linux":
-                subprocess.run(["sudo", "apt", "update"], check=True)
-                subprocess.run(["sudo", "apt", "install", "-y", "python3-venv"], check=True)
-                print(Fore.GREEN + "Pacote python3-venv instalado com sucesso!")
-            else:
-                print(Fore.RED + "Instalação automática de venv não suportada neste sistema.")
-                input(Fore.YELLOW + "Pressione Enter para sair...")
-                sys.exit(1)
-        except subprocess.SubprocessError as install_error:
-            log_error(f"Erro instalando python3-venv: {install_error}")
-            print(Fore.RED + f"Erro instalando python3-venv: {install_error}")
+            subprocess.run(["sudo", "apt", "update"], check=True)
+            subprocess.run(["sudo", "apt", "install", "-y", "python3-venv"], check=True)
+            subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
+        except Exception as e:
+            log_error(f"Erro instalando python3-venv: {e}")
+            print(Fore.RED + f"[✘] Falha ao instalar venv: {e}")
             input(Fore.YELLOW + "Pressione Enter para sair...")
             sys.exit(1)
 
