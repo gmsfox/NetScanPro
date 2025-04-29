@@ -198,14 +198,16 @@ def update_dependencies_crossplatform() -> None:
             else os.path.join(venv_path, "bin", "python3")
         )
 
-        # Aguarda o python_bin aparecer
-        for _ in range(5):
-            if os.path.exists(python_bin):
+        # Aguarda de forma mais segura até 30 segundos
+        print(Fore.CYAN + "Verificando criação do ambiente virtual...")
+        for tentativas in range(30):
+            if os.path.isfile(python_bin):
+                print(Fore.GREEN + "Ambiente virtual pronto!")
                 break
-            print(Fore.YELLOW + "Aguardando criação do ambiente virtual...")
+            print(Fore.YELLOW + f"Aguardando ambiente virtual ({tentativas + 1}s)...")
             time.sleep(1)
         else:
-            raise FileNotFoundError(f"Python virtual environment executable not found: {python_bin}")
+            raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {python_bin}")
 
         print(Fore.CYAN + "Instalando/Atualizando pipreqs...")
         subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pipreqs"], check=True)
