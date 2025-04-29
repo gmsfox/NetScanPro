@@ -190,11 +190,13 @@ def find_venv_python_executable(venv_path: str) -> str:
 
 
 def update_dependencies_crossplatform() -> None:
-    """Atualiza dependências e gera requirements.txt de forma segura e inteligente."""
+    """Atualiza dependências e gera requirements.txt de forma segura e automática."""
     clear_console()
     print(Fore.YELLOW + "Atualizando dependências...")
 
     venv_path = ".venv"
+    is_windows = platform.system() == "Windows"
+    python_bin = os.path.join(venv_path, "Scripts", "python.exe") if is_windows else os.path.join(venv_path, "bin", "python3")
 
     try:
         ensure_venv_support()
@@ -204,15 +206,15 @@ def update_dependencies_crossplatform() -> None:
             subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
 
         print(Fore.CYAN + "Verificando criação do ambiente virtual...")
+
+        # Espera até o executável existir (máx. 30s)
         for i in range(30):
-            try:
-                python_bin = find_venv_python_executable(venv_path)
+            if os.path.exists(python_bin):
                 break
-            except FileNotFoundError:
-                print(Fore.YELLOW + f"Aguardando ambiente virtual ({i+1}s)...")
-                time.sleep(1)
+            print(Fore.YELLOW + f"Aguardando ambiente virtual ({i + 1}s)...")
+            time.sleep(1)
         else:
-            raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {venv_path}")
+            raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {python_bin}")
 
         print(Fore.CYAN + "Instalando/Atualizando pipreqs...")
         subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pipreqs"], check=True)
@@ -223,6 +225,20 @@ def update_dependencies_crossplatform() -> None:
         limpar_requirements()
 
         print(Fore.GREEN + "[✔] requirements.txt atualizado com sucesso!")
+
+    except PermissionError as e:
+        log_error(f"Permissão negada ao tentar usar o interpretador da venv: {e}")
+        print(Fore.RED + "[✘] Permissão negada para acessar o ambiente virtual.")
+        if not is_windows:
+            print(Fore.YELLOW + "Tentando reiniciar com sudo automaticamente...")
+            try:
+                subprocess.run(["sudo", sys.executable] + sys.argv, check=True)
+                sys.exit(0)
+            except Exception as sudo_err:
+                log_error(f"Erro ao tentar reiniciar com sudo: {sudo_err}")
+                print(Fore.RED + f"Erro ao reiniciar com sudo: {sudo_err}")
+        else:
+            print(Fore.YELLOW + "Por favor, execute como administrador.")
 
     except Exception as e:
         log_error(f"Erro atualizando dependências: {e}")
