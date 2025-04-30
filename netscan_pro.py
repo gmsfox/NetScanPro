@@ -127,39 +127,54 @@ def view_logs() -> None:
     input(Fore.YELLOW + "Pressione Enter para voltar...")
 
 def limpar_requirements(caminho_arquivo="requirements.txt") -> None:
-    """Limpa e organiza o arquivo requirements.txt removendo pacotes desnecessários."""
+    """Remove pacotes inválidos/obsoletos do arquivo requirements.txt."""
     pacotes_invalidos = {
+        # Bibliotecas padrão do Python
         '__builtin__', '__pypy__', '_abcoll', '_cmsgpack', '_typeshed', '_winreg',
         'htmlentitydefs', 'httplib', 'Queue', 'StringIO', 'urlparse', 'xmlrpclib',
-        'dummy_thread', 'ntlm', 'java', 'js', 'pyodide', 'thread', 'urllib2',
-        'ctags', 'tomllib'
+        'dummy_thread', 'ntlm', 'java', 'js', 'pyodide', 'thread', 'urllib2', 'tomllib',
+        # Outros falsos positivos
+        'attr', 'brotli', 'ctags', 'ConfigParser', 'HTMLParser'
     }
 
     try:
         with open(caminho_arquivo, "r", encoding="utf-8") as arquivo:
-            linhas = arquivo.readlines()
+            linhas = [linha.strip() for linha in arquivo if linha.strip()]
 
         pacotes_validos = []
         vistos = set()
-
         for linha in linhas:
-            pacote = linha.strip()
-            if not pacote:
-                continue
-            nome = pacote.split("==")[0] if "==" in pacote else pacote
+            nome = linha.split("==")[0].split("[")[0].strip()
             if nome not in pacotes_invalidos and nome not in vistos:
-                pacotes_validos.append(pacote)
+                pacotes_validos.append(linha)
                 vistos.add(nome)
 
-        pacotes_validos.sort()
-
         with open(caminho_arquivo, "w", encoding="utf-8") as arquivo:
-            arquivo.write("\n".join(pacotes_validos) + "\n")
+            arquivo.write("\n".join(sorted(pacotes_validos)) + "\n")
 
-        print(Fore.GREEN + "[✔] requirements.txt limpo e atualizado com sucesso!")
+        print(Fore.GREEN + "[✔] requirements.txt filtrado com sucesso!")
     except Exception as erro:
         log_error(f"Erro ao limpar requirements.txt: {erro}")
-        print(Fore.RED + f"[✘] Erro ao limpar requirements.txt: {erro}")
+        print(Fore.RED + f"[✘] Erro ao filtrar pacotes: {erro}")
+        
+def verificar_requirements() -> None:
+    """Alertas para pacotes que podem exigir revisão manual."""
+    suspeitos = [
+        "brotlicffi", "chardet", "docutils", "filelock", "h2", 
+        "ipython", "jnius", "keyring", "protobuf", "zstandard"
+    ]
+    
+    try:
+        with open("requirements.txt", "r", encoding="utf-8") as f:
+            pacotes = [linha.split("==")[0] for linha in f.readlines()]
+
+        alertas = [pkg for pkg in suspeitos if pkg in pacotes]
+        if alertas:
+            print(Fore.YELLOW + "AVISO: Verifique estes pacotes no requirements.txt:")
+            for pkg in alertas:
+                print(Fore.YELLOW + f"  → {pkg} (pode ser um falso positivo)")
+    except Exception as e:
+        log_error(f"Erro na verificação de requirements: {str(e)}")
 
 def update_tool_from_github() -> None:
     """Atualiza o projeto via GitHub."""
@@ -193,58 +208,36 @@ def find_venv_python_executable(venv_path: str) -> str:
     raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {venv_path}")
 
 def update_dependencies_crossplatform() -> None:
-    """Atualiza dependências e gera requirements.txt de forma totalmente automática.
-    Inclui tratamento de erros detalhado e suporte a Windows/Linux.
-    """
+    """Atualiza dependências de forma totalmente automática, com filtros avançados."""
     clear_console()
     print(Fore.YELLOW + "Iniciando atualização de dependências...")
     
     venv_path = ".venv"
     is_windows = platform.system() == "Windows"
     python_bin = os.path.join(venv_path, "Scripts" if is_windows else "bin", "python.exe" if is_windows else "python3")
-    pip_bin = os.path.join(venv_path, "Scripts" if is_windows else "bin", "pip.exe" if is_windows else "pip")
+    pipreqs_path = os.path.join(venv_path, "Scripts" if is_windows else "bin", "pipreqs.exe" if is_windows else "pipreqs")
 
     try:
-        # Etapa 1: Garantir que o venv está instalado
+        # Etapa 1: Configurar ambiente
         ensure_venv_support()
-
-        # Etapa 2: Criar ambiente virtual se não existir
         if not os.path.exists(python_bin):
             print(Fore.CYAN + "Criando ambiente virtual (.venv)...")
             subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
-            
-            # Aguarda criação do ambiente (especialmente necessário no Windows)
-            for _ in range(30):
-                if os.path.exists(python_bin):
-                    break
-                time.sleep(1)
-            else:
-                raise RuntimeError("Timeout: Ambiente virtual não foi criado corretamente")
+            time.sleep(5)  # Espera a criação do ambiente
 
-        # Etapa 3: Atualizar pip e instalar pipreqs
-        print(Fore.CYAN + "Atualizando pip e instalando pipreqs...")
-        subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pip"], check=True)
-        subprocess.run([python_bin, "-m", "pip", "install", "pipreqs"], check=True)
+        # Etapa 2: Instalar pipreqs
+        print(Fore.CYAN + "Instalando pipreqs...")
+        subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pipreqs"], check=True)
 
-        # Etapa 4: Localizar o executável do pipreqs
-        pipreqs_path = os.path.join(venv_path, "Scripts" if is_windows else "bin", "pipreqs.exe" if is_windows else "pipreqs")
-        
-        # Verifica se o pipreqs está acessível
-        test_pipreqs = subprocess.run([pipreqs_path, "--version"], capture_output=True, text=True)
-        if test_pipreqs.returncode != 0:
-            raise RuntimeError(f"Pipreqs não responde: {test_pipreqs.stderr}")
-
-        # Etapa 5: Gerar requirements.txt
+        # Etapa 3: Gerar requirements.txt
         print(Fore.CYAN + "Gerando requirements.txt...")
-        subprocess.run([
-            pipreqs_path, ".", 
-            "--force", 
-            "--encoding", "utf-8",
-            "--savepath", "requirements.txt"
-        ], check=True)
+        subprocess.run([pipreqs_path, ".", "--force", "--encoding", "utf-8"], check=True)
 
-        # Etapa 6: Limpar requirements.txt
+        # Etapa 4: Filtrar pacotes inválidos
         limpar_requirements()
+        
+        # Etapa 5: Verificar pacotes suspeitos
+        verificar_requirements()
 
         print(Fore.GREEN + "[✔] Dependências atualizadas com sucesso!")
         print(Fore.GREEN + f"Arquivo gerado: {os.path.abspath('requirements.txt')}")
