@@ -103,7 +103,7 @@ def handle_invalid_option(user_language: str) -> None:
 @auto_clear
 def loading_screen() -> None:
     """Tela de carregamento."""
-    print(f"{Style.BRIGHT}GMSFOX".center(60))
+    print(f"{Fore.CYAN}GMSFOX".center(60))
 
 def open_new_terminal(option: str) -> None:
     """Abre nova janela de terminal."""
@@ -114,7 +114,7 @@ def open_new_terminal(option: str) -> None:
             subprocess.Popen(["x-terminal-emulator", "-e", f"python3 {sys.argv[0]} --{option}"])
     except subprocess.SubprocessError as e:
         log_error(f"Erro abrindo novo terminal: {e}")
-        print(Fore.RED + f"Erro: {e}")
+        print(f"{Fore.RED}Erro: {e}")
 
 def view_logs() -> None:
     """Exibe os logs de erro."""
@@ -123,8 +123,8 @@ def view_logs() -> None:
         with open(LOG_FILE, "r", encoding="utf-8") as file:
             print(file.read())
     else:
-        print(Fore.YELLOW + "Nenhum log encontrado.")
-    input(Fore.YELLOW + "Pressione Enter para voltar...")
+        print(f"{Fore.YELLOW}Nenhum log encontrado.")
+    input(f"{Fore.YELLOW}Pressione Enter para voltar...")
 
 def limpar_requirements(caminho_arquivo="requirements.txt") -> None:
     """Remove pacotes inválidos/obsoletos do arquivo requirements.txt."""
@@ -152,10 +152,10 @@ def limpar_requirements(caminho_arquivo="requirements.txt") -> None:
         with open(caminho_arquivo, "w", encoding="utf-8") as arquivo:
             arquivo.write("\n".join(sorted(pacotes_validos)) + "\n")
 
-        print(Fore.GREEN + "[✔] requirements.txt filtrado com sucesso!")
+        print(f"{Fore.GREEN}[✔] requirements.txt filtrado com sucesso!")
     except Exception as erro:
         log_error(f"Erro ao limpar requirements.txt: {erro}")
-        print(Fore.RED + f"[✘] Erro ao filtrar pacotes: {erro}")
+        print(f"{Fore.RED}[✘] Erro ao filtrar pacotes: {erro}")
         
 def verificar_requirements() -> None:
     """Alertas para pacotes que podem exigir revisão manual."""
@@ -170,23 +170,23 @@ def verificar_requirements() -> None:
 
         alertas = [pkg for pkg in suspeitos if pkg in pacotes]
         if alertas:
-            print(Fore.YELLOW + "AVISO: Verifique estes pacotes no requirements.txt:")
+            print(f"{Fore.YELLOW}AVISO: Verifique estes pacotes no requirements.txt:")
             for pkg in alertas:
-                print(Fore.YELLOW + f"  → {pkg} (pode ser um falso positivo)")
+                print(f"{Fore.YELLOW} → {pkg} (pode ser um falso positivo)")
     except Exception as e:
         log_error(f"Erro na verificação de requirements: {str(e)}")
 
 def update_tool_from_github() -> None:
     """Atualiza o projeto via GitHub."""
     clear_console()
-    print(Fore.YELLOW + "Atualizando o NetScan Pro...")
+    print(f"{Fore.YELLOW}Atualizando o NetScan Pro...")
     try:
         subprocess.run(["git", "pull", "https://github.com/gmsfox/NetScanPro.git"], check=True)
-        print(Fore.GREEN + "Atualizado com sucesso!")
+        print(f"{Fore.GREEN}Atualizado com sucesso!")
     except subprocess.SubprocessError as e:
         log_error(f"Erro ao atualizar ferramenta: {e}")
-        print(Fore.RED + f"Erro: {e}")
-    input(Fore.YELLOW + "Pressione Enter para voltar...")
+        print(f"{Fore.RED}Erro: {e}")
+    input(f"{Fore.YELLOW}Pressione Enter para voltar...")
     
 def find_venv_python_executable(venv_path: str) -> str:
     """Procura automaticamente o executável Python dentro da venv."""
@@ -210,7 +210,7 @@ def find_venv_python_executable(venv_path: str) -> str:
 def update_dependencies_crossplatform() -> None:
     """Atualiza dependências de forma totalmente automática, com filtros avançados."""
     clear_console()
-    print(Fore.YELLOW + "Iniciando atualização de dependências...")
+    print(f"{Fore.YELLOW}Iniciando atualização de dependências...")
     
     venv_path = ".venv"
     is_windows = platform.system() == "Windows"
@@ -221,7 +221,7 @@ def update_dependencies_crossplatform() -> None:
         # Etapa 1: Configurar ambiente
         ensure_venv_support()
         if not os.path.exists(python_bin):
-            print(Fore.CYAN + "Criando ambiente virtual (.venv)...")
+            print(f"{Fore.CYAN}Criando ambiente virtual (.venv)...")
             subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
             time.sleep(5)  # Espera a criação do ambiente
 
