@@ -192,56 +192,72 @@ def find_venv_python_executable(venv_path: str) -> str:
 
     raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {venv_path}")
 
-
 def update_dependencies_crossplatform() -> None:
-    """Atualiza dependências e gera requirements.txt de forma segura e inteligente."""
+    """Atualiza dependências e gera requirements.txt de forma totalmente automática.
+    Inclui tratamento de erros detalhado e suporte a Windows/Linux.
+    """
     clear_console()
-    print(Fore.YELLOW + "Atualizando dependências...")
-
+    print(Fore.YELLOW + "Iniciando atualização de dependências...")
+    
     venv_path = ".venv"
     is_windows = platform.system() == "Windows"
-    python_bin = (
-        os.path.join(venv_path, "Scripts", "python.exe") if is_windows
-        else os.path.join(venv_path, "bin", "python3")
-    )
+    python_bin = os.path.join(venv_path, "Scripts" if is_windows else "bin", "python.exe" if is_windows else "python3")
+    pip_bin = os.path.join(venv_path, "Scripts" if is_windows else "bin", "pip.exe" if is_windows else "pip")
 
     try:
+        # Etapa 1: Garantir que o venv está instalado
         ensure_venv_support()
 
-        # Cria .venv se não existir
+        # Etapa 2: Criar ambiente virtual se não existir
         if not os.path.exists(python_bin):
             print(Fore.CYAN + "Criando ambiente virtual (.venv)...")
             subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
+            
+            # Aguarda criação do ambiente (especialmente necessário no Windows)
+            for _ in range(30):
+                if os.path.exists(python_bin):
+                    break
+                time.sleep(1)
+            else:
+                raise RuntimeError("Timeout: Ambiente virtual não foi criado corretamente")
 
-        # Aguarda até 30s o executável estar disponível
-        print(Fore.CYAN + "Verificando criação do ambiente virtual...")
-        for i in range(30):
-            if os.path.isfile(python_bin):
-                break
-            print(Fore.YELLOW + f"Aguardando ambiente virtual ({i + 1}s)...")
-            time.sleep(1)
-        else:
-            raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {python_bin}")
+        # Etapa 3: Atualizar pip e instalar pipreqs
+        print(Fore.CYAN + "Atualizando pip e instalando pipreqs...")
+        subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pip"], check=True)
+        subprocess.run([python_bin, "-m", "pip", "install", "pipreqs"], check=True)
 
-        # Ajusta permissão no Linux
-        if not is_windows:
-            subprocess.run(["chmod", "+x", python_bin], check=False)
+        # Etapa 4: Localizar o executável do pipreqs
+        pipreqs_path = os.path.join(venv_path, "Scripts" if is_windows else "bin", "pipreqs.exe" if is_windows else "pipreqs")
+        
+        # Verifica se o pipreqs está acessível
+        test_pipreqs = subprocess.run([pipreqs_path, "--version"], capture_output=True, text=True)
+        if test_pipreqs.returncode != 0:
+            raise RuntimeError(f"Pipreqs não responde: {test_pipreqs.stderr}")
 
-        print(Fore.CYAN + "Instalando/Atualizando pipreqs...")
-        subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pipreqs"], check=True)
-
+        # Etapa 5: Gerar requirements.txt
         print(Fore.CYAN + "Gerando requirements.txt...")
-        subprocess.run([python_bin, "-m", "pipreqs", ".", "--force", "--encoding", "utf-8"], check=True)
+        subprocess.run([
+            pipreqs_path, ".", 
+            "--force", 
+            "--encoding", "utf-8",
+            "--savepath", "requirements.txt"
+        ], check=True)
 
+        # Etapa 6: Limpar requirements.txt
         limpar_requirements()
 
-        print(Fore.GREEN + "[✔] requirements.txt atualizado com sucesso!")
+        print(Fore.GREEN + "[✔] Dependências atualizadas com sucesso!")
+        print(Fore.GREEN + f"Arquivo gerado: {os.path.abspath('requirements.txt')}")
 
+    except subprocess.CalledProcessError as e:
+        error_msg = f"Erro no subprocesso: {e.stderr.decode().strip() if e.stderr else str(e)}"
+        log_error(error_msg)
+        print(Fore.RED + f"[✘] Falha na execução: {error_msg}")
     except Exception as e:
-        log_error(f"Erro atualizando dependências: {e}")
-        print(Fore.RED + f"[✘] Erro ao atualizar dependências: {e}")
-
-    input(Fore.YELLOW + "Pressione Enter para voltar ao menu...")
+        log_error(f"Erro crítico: {str(e)}")
+        print(Fore.RED + f"[✘] Erro inesperado: {str(e)}")
+    finally:
+        input(Fore.YELLOW + "\nPressione Enter para voltar ao menu...")
 
 def main_menu(user_language: str) -> None:
     """Exibe o menu principal."""
