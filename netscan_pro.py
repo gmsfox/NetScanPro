@@ -103,7 +103,7 @@ def handle_invalid_option(user_language: str) -> None:
 @auto_clear
 def loading_screen() -> None:
     """Tela de carregamento."""
-    print(f"{Fore.CYAN}GMSFOX".center(60))
+    print(f"{Style.BRIGHT}{Fore.GREEN}GMSFOX".center(60))
 
 def open_new_terminal(option: str) -> None:
     """Abre nova janela de terminal."""
