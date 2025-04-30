@@ -33,22 +33,30 @@ def clear_console() -> None:
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def ensure_admin_privileges() -> None:
-    """Garante que está rodando como administrador."""
+    """Verificação de admin universal que não depende de getuid/geteuid."""
     try:
         if platform.system() == "Windows":
+            # Windows: usando API nativa
             is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
             if not is_admin:
                 print(f"{Fore.YELLOW}Reiniciando como administrador...")
-                ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+                ctypes.windll.shell32.ShellExecuteW(
+                    None, "runas", sys.executable, " ".join(sys.argv), None, 1
+                )
                 sys.exit(0)
         else:
-            if hasattr(os, 'geteuid') and os.geteuid() != 0:
+            # Unix/Linux/Mac: usando tentativa de escrita em /root
+            try:
+                with open("/root/.test", "w", encoding="utf-8") as f:
+                    f.write("test")
+                os.unlink("/root/.test")
+            except (IOError, OSError):
                 print(f"{Fore.YELLOW}Reiniciando com sudo...")
                 subprocess.run(["sudo", sys.executable] + sys.argv, check=True)
                 sys.exit(0)
-    except Exception as e:
-        log_error(f"Erro ao tentar elevar privilégios: {e}")
-        print(f"{Fore.RED}Erro: {e}")
+    except Exception as e:  # pylint: disable=broad-except
+        log_error(f"Falha na elevação: {str(e)}")
+        print(f"{Fore.RED}Erro: {str(e)}")
         sys.exit(1)
 
 def ensure_venv_support() -> None:
@@ -226,11 +234,11 @@ def update_dependencies_crossplatform() -> None:
             time.sleep(5)  # Espera a criação do ambiente
 
         # Etapa 2: Instalar pipreqs
-        print(Fore.CYAN + "Instalando pipreqs...")
+        print(f"{Fore.CYAN}Instalando pipreqs...")
         subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pipreqs"], check=True)
 
         # Etapa 3: Gerar requirements.txt
-        print(Fore.CYAN + "Gerando requirements.txt...")
+        print(f"{Fore.CYAN}Gerando requirements.txt...")
         subprocess.run([pipreqs_path, ".", "--force", "--encoding", "utf-8"], check=True)
 
         # Etapa 4: Filtrar pacotes inválidos
@@ -239,24 +247,24 @@ def update_dependencies_crossplatform() -> None:
         # Etapa 5: Verificar pacotes suspeitos
         verificar_requirements()
 
-        print(Fore.GREEN + "[✔] Dependências atualizadas com sucesso!")
-        print(Fore.GREEN + f"Arquivo gerado: {os.path.abspath('requirements.txt')}")
+        print(f"{Fore.GREEN}[✔] Dependências atualizadas com sucesso!")
+        print(f"{Fore.GREEN}Arquivo gerado: {os.path.abspath('requirements.txt')}")
 
     except subprocess.CalledProcessError as e:
         error_msg = f"Erro no subprocesso: {e.stderr.decode().strip() if e.stderr else str(e)}"
         log_error(error_msg)
-        print(Fore.RED + f"[✘] Falha na execução: {error_msg}")
+        print(f"{Fore.RED}[✘] Falha na execução: {error_msg}")
     except Exception as e:
         log_error(f"Erro crítico: {str(e)}")
-        print(Fore.RED + f"[✘] Erro inesperado: {str(e)}")
+        print(f"{Fore.RED}[✘] Erro inesperado: {str(e)}")
     finally:
-        input(Fore.YELLOW + "\nPressione Enter para voltar ao menu...")
+        input(f"{Fore.YELLOW}\nPressione Enter para voltar ao menu...")
 
 def main_menu(user_language: str) -> None:
     """Exibe o menu principal."""
     while True:
         clear_console()
-        print(Fore.YELLOW + Style.BRIGHT + " Menu Principal ".center(50, "-"))
+        print(f"{Fore.YELLOW}{Style.BRIGHT}{'Menu Principal'.center(50, "-")}")
         print("1. Ferramentas de Rede")
         print("2. Ferramentas de Engenharia Social")
         print("3. Atualizar Ferramenta")
@@ -289,11 +297,11 @@ def main() -> None:
 
     if "--network-tools" in args:
         print("Ferramentas de rede (simulado)...")
-        input(Fore.YELLOW + "Pressione Enter para sair...")
+        input(f"{Fore.YELLOW}Pressione Enter para sair...")
         return
     if "--social-tools" in args:
         print("Ferramentas de engenharia social (simulado)...")
-        input(Fore.YELLOW + "Pressione Enter para sair...")
+        input(f"{Fore.YELLOW}Pressione Enter para sair...")
         return
     if "--update-tool" in args:
         update_tool_from_github()
@@ -302,7 +310,7 @@ def main() -> None:
         update_dependencies_crossplatform()
         return
 
-    print(Fore.YELLOW + " Language Selection ".center(50, "-"))
+    print(f"{Fore.YELLOW}Language Selection ".center(50, "-"))
     print("1. English")
     print("2. Português")
     language_option = input("Choose your language: ")
