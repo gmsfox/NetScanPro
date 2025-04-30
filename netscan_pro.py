@@ -38,17 +38,17 @@ def ensure_admin_privileges() -> None:
         if platform.system() == "Windows":
             is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
             if not is_admin:
-                print(Fore.YELLOW + "Reiniciando como administrador...")
+                print(f"{Fore.YELLOW}Reiniciando como administrador...")
                 ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
                 sys.exit(0)
         else:
             if hasattr(os, 'geteuid') and os.geteuid() != 0:
-                print(Fore.YELLOW + "Reiniciando com sudo...")
+                print(f"{Fore.YELLOW}Reiniciando com sudo...")
                 subprocess.run(["sudo", sys.executable] + sys.argv, check=True)
                 sys.exit(0)
     except Exception as e:
         log_error(f"Erro ao tentar elevar privilégios: {e}")
-        print(Fore.RED + f"Erro: {e}")
+        print(f"{Fore.RED}Erro: {e}")
         sys.exit(1)
 
 def ensure_venv_support() -> None:
@@ -56,21 +56,21 @@ def ensure_venv_support() -> None:
     try:
         import venv
     except ImportError:
-        print(Fore.RED + "O módulo 'venv' não está disponível.")
+        print(f"{Fore.RED}O módulo 'venv' não está disponível.")
         if platform.system() == "Linux":
-            print(Fore.YELLOW + "Tentando instalar automaticamente o suporte a ambientes virtuais...")
+            print(f"{Fore.YELLOW}Tentando instalar automaticamente o suporte a ambientes virtuais...")
             try:
                 subprocess.run(["sudo", "apt", "update"], check=True)
                 subprocess.run(["sudo", "apt", "install", "-y", "python3-venv"], check=True)
-                print(Fore.GREEN + "[✔] Suporte a venv instalado com sucesso.")
+                print(f"{Fore.GREEN}[✔] Suporte a venv instalado com sucesso.")
             except subprocess.SubprocessError as e:
                 log_error(f"Falha ao instalar python3-venv: {e}")
-                print(Fore.RED + f"Erro ao instalar venv automaticamente: {e}")
-                input(Fore.YELLOW + "Pressione Enter para sair...")
+                print(f"{Fore.RED}Erro ao instalar venv automaticamente: {e}")
+                input(f"{Fore.YELLOW}Pressione Enter para sair...")
                 sys.exit(1)
         else:
-            print(Fore.RED + "Instalação automática de venv não suportada neste sistema.")
-            input(Fore.YELLOW + "Pressione Enter para sair...")
+            print(f"{Fore.RED}Instalação automática de venv não suportada neste sistema.")
+            input(f"{Fore.YELLOW}Pressione Enter para sair...")
             sys.exit(1)
             
 def auto_clear(func):
@@ -86,24 +86,24 @@ def auto_clear(func):
 def welcome_message(user_language: str) -> None:
     """Mensagem de boas-vindas."""
     msg = "Welcome to the NetScan Pro tool!" if user_language == LANGUAGE_EN else "Bem-vindo à ferramenta NetScan Pro!"
-    print(Fore.GREEN + Style.BRIGHT + msg.center(50))
+    print(f"{Fore.GREEN}{Style.BRIGHT}{msg.center(50)}")
 
 @auto_clear
 def goodbye_message(user_language: str) -> None:
     """Mensagem de despedida."""
     msg = "Thank you for using NetScan Pro!" if user_language == LANGUAGE_EN else "Obrigado por usar o NetScan Pro!"
-    print(Fore.GREEN + Style.BRIGHT + msg.center(50))
+    print(f"{Fore.GREEN}{Style.BRIGHT}{msg.center(50)}")
 
 @auto_clear
 def handle_invalid_option(user_language: str) -> None:
     """Mensagem para opções inválidas."""
     msg = "Invalid option. Please try again." if user_language == LANGUAGE_EN else "Opção inválida. Tente novamente."
-    print(Fore.RED + msg)
+    print(f"{Fore.RED}{msg}")
 
 @auto_clear
 def loading_screen() -> None:
     """Tela de carregamento."""
-    print(Style.BRIGHT + "GMSFOX".center(60))
+    print(f"{Style.BRIGHT}GMSFOX".center(60))
 
 def open_new_terminal(option: str) -> None:
     """Abre nova janela de terminal."""
