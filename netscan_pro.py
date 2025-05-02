@@ -5,11 +5,11 @@ Ferramenta de rede com funcionalidades de escaneamento e engenharia social.
 import os
 import platform
 import subprocess
+import venv
 import time
 import sys
 import logging
 import ctypes
-import requests
 from colorama import init, Fore, Style
 
 LANGUAGE_EN = '1'
@@ -60,25 +60,34 @@ def ensure_admin_privileges() -> None:
         sys.exit(1)
 
 def ensure_venv_support() -> None:
-    """Garante que o suporte a venv está disponível e tenta instalar automaticamente se estiver ausente."""
+    """Garante que o suporte a venv está disponível."""
     try:
-        import venv
-    except ImportError:
-        print(f"{Fore.RED}O módulo 'venv' não está disponível.")
+        # Verifica se o módulo venv está realmente funcional
+        if not hasattr(venv, 'EnvBuilder') or not callable(venv.EnvBuilder):
+            raise AttributeError("Módulo venv incompleto")
+            
+        # Testa criação dummy de ambiente (sem realmente criar)
+        dummy_builder = venv.EnvBuilder(with_pip=False)
+        if not isinstance(dummy_builder, venv.EnvBuilder):
+            raise RuntimeError("Falha na inicialização do venv")
+            
+    except (AttributeError, RuntimeError) as e:
+        print(f"{Fore.RED}Erro no módulo venv: {e}")
         if platform.system() == "Linux":
-            print(f"{Fore.YELLOW}Tentando instalar automaticamente o suporte a ambientes virtuais...")
+            print(f"{Fore.YELLOW}Tentando instalar python3-venv...")
             try:
                 subprocess.run(["sudo", "apt", "update"], check=True)
                 subprocess.run(["sudo", "apt", "install", "-y", "python3-venv"], check=True)
                 print(f"{Fore.GREEN}[✔] Suporte a venv instalado com sucesso.")
-            except subprocess.SubprocessError as e:
-                log_error(f"Falha ao instalar python3-venv: {e}")
-                print(f"{Fore.RED}Erro ao instalar venv automaticamente: {e}")
-                input(f"{Fore.YELLOW}Pressione Enter para sair...")
-                sys.exit(1)
+                # Verifica novamente após instalação
+                ensure_venv_support()
+                return
+            except subprocess.SubprocessError as subprocess_err:  # Nome mais descritivo
+                log_error(f"Falha ao instalar python3-venv: {subprocess_err}")
+                print(f"{Fore.RED}Erro ao instalar venv: {subprocess_err}")
+            sys.exit(1)
         else:
-            print(f"{Fore.RED}Instalação automática de venv não suportada neste sistema.")
-            input(f"{Fore.YELLOW}Pressione Enter para sair...")
+            print(f"{Fore.RED}Instalação automática não suportada neste sistema.")
             sys.exit(1)
             
 def auto_clear(func):
@@ -161,7 +170,7 @@ def limpar_requirements(caminho_arquivo="requirements.txt") -> None:
             arquivo.write("\n".join(sorted(pacotes_validos)) + "\n")
 
         print(f"{Fore.GREEN}[✔] requirements.txt filtrado com sucesso!")
-    except Exception as erro:
+    except (OSError, UnicodeDecodeError) as erro:
         log_error(f"Erro ao limpar requirements.txt: {erro}")
         print(f"{Fore.RED}[✘] Erro ao filtrar pacotes: {erro}")
         
@@ -181,7 +190,7 @@ def verificar_requirements() -> None:
             print(f"{Fore.YELLOW}AVISO: Verifique estes pacotes no requirements.txt:")
             for pkg in alertas:
                 print(f"{Fore.YELLOW} → {pkg} (pode ser um falso positivo)")
-    except Exception as e:
+    except (ValueError, UnicodeDecodeError) as e:
         log_error(f"Erro na verificação de requirements: {str(e)}")
 
 def update_tool_from_github() -> None:
@@ -208,7 +217,7 @@ def find_venv_python_executable(venv_path: str) -> str:
         if os.path.exists(path):
             return path
 
-    for root, dirs, files in os.walk(venv_path):
+    for root, _, files in os.walk(venv_path):
         for file in files:
             if file.startswith("python") and os.access(os.path.join(root, file), os.X_OK):
                 return os.path.join(root, file)
@@ -219,7 +228,7 @@ def update_dependencies_crossplatform() -> None:
     """Atualiza dependências de forma totalmente automática, com filtros avançados."""
     clear_console()
     print(f"{Fore.YELLOW}Iniciando atualização de dependências...")
-    
+       
     venv_path = ".venv"
     is_windows = platform.system() == "Windows"
     python_bin = os.path.join(venv_path, "Scripts" if is_windows else "bin", "python.exe" if is_windows else "python3")
@@ -254,7 +263,7 @@ def update_dependencies_crossplatform() -> None:
         error_msg = f"Erro no subprocesso: {e.stderr.decode().strip() if e.stderr else str(e)}"
         log_error(error_msg)
         print(f"{Fore.RED}[✘] Falha na execução: {error_msg}")
-    except Exception as e:
+    except (OSError, PermissionError, FileNotFoundError) as e:
         log_error(f"Erro crítico: {str(e)}")
         print(f"{Fore.RED}[✘] Erro inesperado: {str(e)}")
     finally:
