@@ -65,12 +65,12 @@ def ensure_venv_support() -> None:
         # Verifica se o módulo venv está realmente funcional
         if not hasattr(venv, 'EnvBuilder') or not callable(venv.EnvBuilder):
             raise AttributeError("Módulo venv incompleto")
-            
+
         # Testa criação dummy de ambiente (sem realmente criar)
         dummy_builder = venv.EnvBuilder(with_pip=False)
         if not isinstance(dummy_builder, venv.EnvBuilder):
             raise RuntimeError("Falha na inicialização do venv")
-            
+
     except (AttributeError, RuntimeError) as e:
         print(f"{Fore.RED}Erro no módulo venv: {e}")
         if platform.system() == "Linux":
@@ -89,7 +89,7 @@ def ensure_venv_support() -> None:
         else:
             print(f"{Fore.RED}Instalação automática não suportada neste sistema.")
             sys.exit(1)
-            
+
 def auto_clear(func):
     """Decorator que limpa a tela antes de executar funções."""
     def wrapper(*args, **kwargs):
@@ -102,19 +102,25 @@ def auto_clear(func):
 @auto_clear
 def welcome_message(user_language: str) -> None:
     """Mensagem de boas-vindas."""
-    msg = "Welcome to the NetScan Pro tool!" if user_language == LANGUAGE_EN else "Bem-vindo à ferramenta NetScan Pro!"
+    msg = ("Welcome to the NetScan Pro tool!"
+           if user_language == LANGUAGE_EN else
+           "Bem-vindo à ferramenta NetScan Pro!")
     print(f"{Fore.GREEN}{Style.BRIGHT}{msg.center(50)}")
 
 @auto_clear
 def goodbye_message(user_language: str) -> None:
     """Mensagem de despedida."""
-    msg = "Thank you for using NetScan Pro!" if user_language == LANGUAGE_EN else "Obrigado por usar o NetScan Pro!"
+    msg =("Thank you for using NetScan Pro!"
+          if user_language == LANGUAGE_EN else
+          "Obrigado por usar o NetScan Pro!")
     print(f"{Fore.GREEN}{Style.BRIGHT}{msg.center(50)}")
 
 @auto_clear
 def handle_invalid_option(user_language: str) -> None:
     """Mensagem para opções inválidas."""
-    msg = "Invalid option. Please try again." if user_language == LANGUAGE_EN else "Opção inválida. Tente novamente."
+    msg =("Invalid option. Please try again."
+          if user_language == LANGUAGE_EN else
+          "Opção inválida. Tente novamente.")
     print(f"{Fore.RED}{msg}")
 
 @auto_clear
@@ -173,14 +179,14 @@ def limpar_requirements(caminho_arquivo="requirements.txt") -> None:
     except (OSError, UnicodeDecodeError) as erro:
         log_error(f"Erro ao limpar requirements.txt: {erro}")
         print(f"{Fore.RED}[✘] Erro ao filtrar pacotes: {erro}")
-        
+
 def verificar_requirements() -> None:
     """Alertas para pacotes que podem exigir revisão manual."""
     suspeitos = [
-        "brotlicffi", "chardet", "docutils", "filelock", "h2", 
+        "brotlicffi", "chardet", "docutils", "filelock", "h2",
         "ipython", "jnius", "keyring", "protobuf", "zstandard"
     ]
-    
+
     try:
         with open("requirements.txt", "r", encoding="utf-8") as f:
             pacotes = [linha.split("==")[0] for linha in f.readlines()]
@@ -204,7 +210,7 @@ def update_tool_from_github() -> None:
         log_error(f"Erro ao atualizar ferramenta: {e}")
         print(f"{Fore.RED}Erro: {e}")
     input(f"{Fore.YELLOW}Pressione Enter para voltar...")
-    
+
 def find_venv_python_executable(venv_path: str) -> str:
     """Procura automaticamente o executável Python dentro da venv."""
     possible_paths = [
@@ -228,11 +234,15 @@ def update_dependencies_crossplatform() -> None:
     """Atualiza dependências de forma totalmente automática, com filtros avançados."""
     clear_console()
     print(f"{Fore.YELLOW}Iniciando atualização de dependências...")
-       
+
     venv_path = ".venv"
     is_windows = platform.system() == "Windows"
-    python_bin = os.path.join(venv_path, "Scripts" if is_windows else "bin", "python.exe" if is_windows else "python3")
-    pipreqs_path = os.path.join(venv_path, "Scripts" if is_windows else "bin", "pipreqs.exe" if is_windows else "pipreqs")
+    python_bin = os.path.join(venv_path,
+                              "Scripts" if is_windows else "bin",
+                              "python.exe" if is_windows else "python3")
+    pipreqs_path = os.path.join(venv_path,
+                                "Scripts" if is_windows else "bin",
+                                "pipreqs.exe" if is_windows else "pipreqs")
 
     try:
         # Etapa 1: Configurar ambiente
@@ -252,7 +262,7 @@ def update_dependencies_crossplatform() -> None:
 
         # Etapa 4: Filtrar pacotes inválidos
         limpar_requirements()
-        
+
         # Etapa 5: Verificar pacotes suspeitos
         verificar_requirements()
 
