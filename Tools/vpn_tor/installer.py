@@ -1,6 +1,6 @@
 # Tools/vpn_tor/installer.py
 import subprocess
-from ...core.updates import update_dependencies_crossplatform
+from core.updates import update_dependencies_crossplatform
 
 class VPNTorInstaller:
     def install_protonvpn(self):
