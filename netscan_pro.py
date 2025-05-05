@@ -343,7 +343,7 @@ def main_menu(user_language: str) -> None:
         print("6. Ver Logs")
         print("0. Sair")
 
-        choice = input("\n[>] Escolha uma opção: ")
+        choice = input("Escolha uma opção: ")
 
         if choice == '0':
             goodbye_message(user_language)
