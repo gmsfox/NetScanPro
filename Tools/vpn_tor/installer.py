@@ -6,19 +6,19 @@ class VPNTorInstaller:
     def __init__(self):
         """Inicializa com todos os pacotes necessários"""
         self.required_packages = ["tor", "torbrowser-launcher", "obfs4proxy"]
-        self.kali_key = "827C8569F2518CC677FECA1AED65462EC8D5E4C5"
         self.tor_key_url = "https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc"
+        self.keyring_path = "/usr/share/keyrings/tor-archive-keyring.gpg"
 
     def check_installation(self):
-        """Verifica se todos os pacotes estão instalados corretamente"""
+        """Verifica se todos os pacotes estão instalados"""
         try:
             for pkg in self.required_packages:
                 result = subprocess.run(
-                    ["which", pkg],
+                    ["dpkg", "-l", pkg],
                     capture_output=True,
                     text=True
                 )
-                if result.returncode != 0:
+                if "ii" not in result.stdout:  # ii significa instalado corretamente
                     return False
             return True
         except Exception as e:
@@ -42,39 +42,30 @@ class VPNTorInstaller:
             return False
 
     def install_all(self):
-        """Executa o processo completo de instalação"""
+        """Processo de instalação atualizado para sistemas modernos"""
         if self.check_installation():
             print(f"{Fore.BLUE}[!] Pacotes já estão instalados")
             return True
 
-        print(f"{Fore.CYAN}\n[*] Iniciando instalação do Tor...")
+        print(f"{Fore.CYAN}\n[*] Iniciando instalação do Tor (método moderno)...")
 
-        # 1. Corrigir repositórios Kali
+        # 1. Baixar e instalar chave GPG corretamente
         if not self._run_command([
-            "sudo", "apt-key", "adv", "--keyserver",
-            "keyserver.ubuntu.com", "--recv-keys", self.kali_key
-        ]):
+            "sudo", "wget", "-qO-", self.tor_key_url,
+            "|", "sudo", "gpg", "--dearmor",
+            "-o", self.keyring_path
+        ], shell=True):
             return False
 
         # 2. Configurar repositório Tor
-        repo_cmd = [
+        repo_line = f"deb [signed-by={self.keyring_path}] https://deb.torproject.org/torproject.org kali main"
+        if not self._run_command([
             "sudo", "sh", "-c",
-            "echo 'deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] "
-            "https://deb.torproject.org/torproject.org kali main' > "
-            "/etc/apt/sources.list.d/tor.list"
-        ]
-        if not self._run_command(repo_cmd):
+            f"echo '{repo_line}' > /etc/apt/sources.list.d/tor.list"
+        ]):
             return False
 
-        # 3. Adicionar chave GPG
-        gpg_cmd = (
-            f"wget -qO- {self.tor_key_url} | "
-            "sudo gpg --dearmor -o /usr/share/keyrings/tor-archive-keyring.gpg"
-        )
-        if not self._run_command(gpg_cmd, shell=True):
-            return False
-
-        # 4. Instalar pacotes
+        # 3. Instalar pacotes
         commands = [
             ["sudo", "apt", "update"],
             ["sudo", "apt", "install", "-y"] + self.required_packages,
