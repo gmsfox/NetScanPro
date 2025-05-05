@@ -86,7 +86,7 @@ def ensure_venv_support() -> None:
                 # Verifica novamente após instalação
                 ensure_venv_support()
                 return
-            except subprocess.SubprocessError as subprocess_err:  # Nome mais descritivo
+            except subprocess.SubprocessError as subprocess_err:
                 log_error(f"Falha ao instalar python3-venv: {subprocess_err}")
                 print(f"{Fore.RED}Erro ao instalar venv: {subprocess_err}")
             sys.exit(1)
@@ -156,11 +156,9 @@ def view_logs() -> None:
 def limpar_requirements(caminho_arquivo="requirements.txt") -> None:
     """Remove pacotes inválidos/obsoletos do arquivo requirements.txt."""
     pacotes_invalidos = {
-        # Bibliotecas padrão do Python
         '__builtin__', '__pypy__', '_abcoll', '_cmsgpack', '_typeshed', '_winreg',
         'htmlentitydefs', 'httplib', 'Queue', 'StringIO', 'urlparse', 'xmlrpclib',
         'dummy_thread', 'ntlm', 'java', 'js', 'pyodide', 'thread', 'urllib2', 'tomllib',
-        # Outros falsos positivos
         'attr', 'brotli', 'ctags', 'ConfigParser', 'HTMLParser'
     }
 
@@ -233,55 +231,6 @@ def find_venv_python_executable(venv_path: str) -> str:
                 return os.path.join(root, file)
 
     raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {venv_path}")
-
-def update_dependencies_crossplatform() -> None:
-    """Atualiza dependências de forma totalmente automática, com filtros avançados."""
-    clear_console()
-    print(f"{Fore.YELLOW}Iniciando atualização de dependências...")
-
-    venv_path = ".venv"
-    is_windows = platform.system() == "Windows"
-    python_bin = os.path.join(venv_path,
-                              "Scripts" if is_windows else "bin",
-                              "python.exe" if is_windows else "python3")
-    pipreqs_path = os.path.join(venv_path,
-                                "Scripts" if is_windows else "bin",
-                                "pipreqs.exe" if is_windows else "pipreqs")
-
-    try:
-        # Etapa 1: Configurar ambiente
-        ensure_venv_support()
-        if not os.path.exists(python_bin):
-            print(f"{Fore.CYAN}Criando ambiente virtual (.venv)...")
-            subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
-            time.sleep(5)  # Espera a criação do ambiente
-
-        # Etapa 2: Instalar pipreqs
-        print(f"{Fore.CYAN}Instalando pipreqs...")
-        subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pipreqs"], check=True)
-
-        # Etapa 3: Gerar requirements.txt
-        print(f"{Fore.CYAN}Gerando requirements.txt...")
-        subprocess.run([pipreqs_path, ".", "--force", "--encoding", "utf-8"], check=True)
-
-        # Etapa 4: Filtrar pacotes inválidos
-        limpar_requirements()
-
-        # Etapa 5: Verificar pacotes suspeitos
-        verificar_requirements()
-
-        print(f"{Fore.GREEN}[✔] Dependências atualizadas com sucesso!")
-        print(f"{Fore.GREEN}Arquivo gerado: {os.path.abspath('requirements.txt')}")
-
-    except subprocess.CalledProcessError as e:
-        error_msg = f"Erro no subprocesso: {e.stderr.decode().strip() if e.stderr else str(e)}"
-        log_error(error_msg)
-        print(f"{Fore.RED}[✘] Falha na execução: {error_msg}")
-    except (OSError, PermissionError, FileNotFoundError) as e:
-        log_error(f"Erro crítico: {str(e)}")
-        print(f"{Fore.RED}[✘] Erro inesperado: {str(e)}")
-    finally:
-        input(f"{Fore.YELLOW}\nPressione Enter para voltar ao menu...")
 
 def vpn_tor_menu(vpn_manager: VPNTorManager, vpn_installer: VPNTorInstaller, lang: str):
     """Menu dedicado à VPN+TOR."""
