@@ -232,56 +232,32 @@ def find_venv_python_executable(venv_path: str) -> str:
 
     raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {venv_path}")
 
-def vpn_tor_menu(vpn_manager: VPNTorManager, vpn_installer: VPNTorInstaller, lang: str):
-    """Menu dedicado à VPN+TOR com verificação real"""
+def vpn_tor_menu(vpn_manager, vpn_installer, lang):
+    """Menu VPN+Tor com verificação de instalação"""
     while True:
         clear_console()
-        print(f"{Fore.CYAN}{'VPN + TOR'.center(50, '=')}")
+        print(f"{Fore.CYAN}{' VPN + TOR '.center(50, '=')}")
+
+        # Verifica status antes de mostrar opções
+        tor_installed = vpn_installer.check_installation()
+        status = f"{Fore.GREEN}✔ Instalado" if tor_installed else f"{Fore.RED}✖ Não instalado"
+
+        print(f"Status: {status}{Style.RESET_ALL}\n")
         print("1. Conectar VPN (+Tor)")
         print("2. Desconectar VPN")
-        print("3. Ver Status")
-        print("4. Download + Instalação")
+        print("3. Ver Status Detalhado")
+        print("4. Instalar/Atualizar Tor")
         print("0. Voltar")
 
         choice = input("\n[VPN] Escolha: ")
 
-        if choice == "1":
-            try:
-                if vpn_manager.connect(use_tor=True):
-                    print(f"{Fore.GREEN}Conexão estabelecida com sucesso!")
-                else:
-                    print(f"{Fore.RED}Falha ao conectar. Verifique se o Tor está instalado.")
-            except Exception as e:
-                print(f"{Fore.RED}Erro na conexão: {e}")
-            input("\nPressione Enter para continuar...")
-
-        elif choice == "2":
-            vpn_manager.disconnect()
-            input("\nPressione Enter para continuar...")
-
-        elif choice == "3":
-            status = "✅ Ativa" if vpn_manager.is_connected else "❌ Inativa"
-            tor_status = "✅ Disponível" if vpn_installer.check_installation() else "❌ Não instalado"
-            print(f"\nStatus VPN: {status}")
-            print(f"Status Tor: {tor_status}")
-            input("\nPressione Enter para continuar...")
-
-        elif choice == "4":
+        if choice == "4":
             clear_console()
-            print(f"{Fore.YELLOW}[*] Iniciando instalação do Tor...")
-
-            if vpn_installer.check_installation():
-                print(f"{Fore.BLUE}[!] Tor já está instalado")
+            if vpn_installer.install_all():
+                print(f"{Fore.GREEN}\n[+] Tor instalado com sucesso!")
             else:
-                if vpn_installer.install_all():
-                    print(f"{Fore.GREEN}[✔] Instalação concluída com sucesso!")
-                else:
-                    print(f"{Fore.RED}[✘] Falha na instalação. Verifique os logs.")
-
+                print(f"{Fore.RED}\n[-] Falha na instalação")
             input("\nPressione Enter para continuar...")
-
-        elif choice == "0":
-            break
 
 def main_menu(user_language: str) -> None:
     """Exibe o menu principal."""
