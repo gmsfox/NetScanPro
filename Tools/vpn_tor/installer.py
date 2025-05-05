@@ -5,65 +5,75 @@ from core.updates import update_dependencies_crossplatform
 
 class VPNTorInstaller:
     def __init__(self):
+        """Inicializa a classe com os pacotes necessários"""
         self.required_packages = ["tor", "torbrowser-launcher", "obfs4proxy"]
-        self.installed = False
+        self.key_url = "https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc"
+        self.keyring_path = "/usr/share/keyrings/tor-archive-keyring.gpg"
 
-    def check_installation(self):
-        """Verifica se todos os pacotes necessários estão instalados"""
+    def _run_command(self, command, shell=False):
+        """Método auxiliar para executar comandos"""
         try:
-            for pkg in self.required_packages:
-                result = subprocess.run(["which", pkg],
-                                      capture_output=True,
-                                      text=True)
-                if result.returncode != 0:
-                    return False
+            result = subprocess.run(
+                command,
+                shell=shell,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
             return True
-        except Exception:
+        except subprocess.CalledProcessError as e:
+            print(f"{Fore.RED}Erro ao executar: {' '.join(command) if isinstance(command, list) else command}")
+            print(f"{Fore.YELLOW}Detalhes: {e.stderr.strip()}")
             return False
 
+    def check_installation(self):
+        """Verifica se todos os pacotes estão instalados"""
+        for pkg in self.required_packages:
+            if not self._run_command(["which", pkg]):
+                return False
+        return True
+
     def install_all(self):
-        """Instala todos os componentes necessários de forma robusta"""
+        """Executa o processo completo de instalação"""
         if self.check_installation():
             print(f"{Fore.BLUE}[!] Pacotes já estão instalados")
             return True
 
-        try:
-            print(f"{Fore.YELLOW}[*] Configurando repositórios Tor...")
+        print(f"{Fore.YELLOW}[*] Configurando ambiente Tor...")
 
-            # 1. Configurar repositório e chave GPG
-            subprocess.run([
-                "sudo", "sh", "-c",
-                "echo 'deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] "
-                "https://deb.torproject.org/torproject.org kali main' > "
-                "/etc/apt/sources.list.d/tor.list"
-            ], check=True)
+        # 1. Configurar repositório
+        repo_cmd = [
+            "sudo", "sh", "-c",
+            f"echo 'deb [signed-by={self.keyring_path}] "
+            f"https://deb.torproject.org/torproject.org kali main' > "
+            "/etc/apt/sources.list.d/tor.list"
+        ]
 
-            subprocess.run([
-                "wget", "-qO-",
-                "https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc",
-                "|", "sudo", "gpg", "--dearmor",
-                "-o", "/usr/share/keyrings/tor-archive-keyring.gpg"
-            ], shell=True, check=True)
+        # 2. Adicionar chave GPG
+        gpg_cmd = (
+            f"wget -qO- {self.key_url} | "
+            f"sudo gpg --dearmor -o {self.keyring_path}"
+        )
 
-            # 2. Atualizar e instalar
-            print(f"{Fore.YELLOW}[*] Instalando pacotes...")
-            subprocess.run(["sudo", "apt", "update"], check=True)
-            subprocess.run([
-                "sudo", "apt", "install", "-y"
-            ] + self.required_packages, check=True)
+        # 3. Instalar pacotes
+        install_cmd = ["sudo", "apt", "install", "-y"] + self.required_packages
 
-            # 3. Verificar instalação
-            if self.check_installation():
-                print(f"{Fore.GREEN}[✔] Instalação concluída com sucesso!")
-                self.installed = True
-                return True
+        # Executar todos os comandos em sequência
+        steps = [
+            (repo_cmd, False),
+            (gpg_cmd, True),
+            (["sudo", "apt", "update"], False),
+            (install_cmd, False)
+        ]
 
-            print(f"{Fore.RED}[✘] Instalação incompleta")
-            return False
+        for cmd, use_shell in steps:
+            if not self._run_command(cmd, shell=use_shell):
+                return False
 
-        except subprocess.CalledProcessError as e:
-            print(f"{Fore.RED}[✘] Erro durante instalação: {e.stderr or str(e)}")
-            return False
-        except Exception as e:
-            print(f"{Fore.RED}[✘] Erro inesperado: {str(e)}")
-            return False
+        if self.check_installation():
+            print(f"{Fore.GREEN}[✔] Instalação concluída com sucesso!")
+            return True
+
+        print(f"{Fore.RED}[✘] A instalação não foi concluída corretamente")
+        return False
