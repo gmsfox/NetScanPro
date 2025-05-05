@@ -233,7 +233,7 @@ def find_venv_python_executable(venv_path: str) -> str:
     raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {venv_path}")
 
 def vpn_tor_menu(vpn_manager: VPNTorManager, vpn_installer: VPNTorInstaller, lang: str):
-    """Menu dedicado à VPN+TOR."""
+    """Menu dedicado à VPN+TOR com verificação real"""
     while True:
         clear_console()
         print(f"{Fore.CYAN}{'VPN + TOR'.center(50, '=')}")
@@ -247,8 +247,10 @@ def vpn_tor_menu(vpn_manager: VPNTorManager, vpn_installer: VPNTorInstaller, lan
 
         if choice == "1":
             try:
-                vpn_manager.connect(use_tor=True)
-                print(f"{Fore.GREEN}Conexão estabelecida com sucesso!")
+                if vpn_manager.connect(use_tor=True):
+                    print(f"{Fore.GREEN}Conexão estabelecida com sucesso!")
+                else:
+                    print(f"{Fore.RED}Falha ao conectar. Verifique se o Tor está instalado.")
             except Exception as e:
                 print(f"{Fore.RED}Erro na conexão: {e}")
             input("\nPressione Enter para continuar...")
@@ -259,18 +261,23 @@ def vpn_tor_menu(vpn_manager: VPNTorManager, vpn_installer: VPNTorInstaller, lan
 
         elif choice == "3":
             status = "✅ Ativa" if vpn_manager.is_connected else "❌ Inativa"
-            print(f"\nStatus: {status}")
+            tor_status = "✅ Disponível" if vpn_installer.check_installation() else "❌ Não instalado"
+            print(f"\nStatus VPN: {status}")
+            print(f"Status Tor: {tor_status}")
             input("\nPressione Enter para continuar...")
 
         elif choice == "4":
-            try:
-                vpn_installer.install_all()
-                print(f"{Fore.GREEN}Instalação concluída com sucesso!")
-            except Exception as e:
-                print(f"{Fore.RED}Erro: {e}")
-                if "dependências" in str(e):
-                    print(f"{Fore.YELLOW}Atualizando dependências...")
-                    update_dependencies_crossplatform()
+            clear_console()
+            print(f"{Fore.YELLOW}[*] Iniciando instalação do Tor...")
+
+            if vpn_installer.check_installation():
+                print(f"{Fore.BLUE}[!] Tor já está instalado")
+            else:
+                if vpn_installer.install_all():
+                    print(f"{Fore.GREEN}[✔] Instalação concluída com sucesso!")
+                else:
+                    print(f"{Fore.RED}[✘] Falha na instalação. Verifique os logs.")
+
             input("\nPressione Enter para continuar...")
 
         elif choice == "0":
