@@ -11,6 +11,10 @@ import sys
 import logging
 import ctypes
 from colorama import init, Fore, Style
+# Módulos internos
+from Tools.vpn_tor.manager import VPNTorManager
+from Tools.vpn_tor.installer import VPNTorInstaller
+from core.updates import update_dependencies_crossplatform
 
 LANGUAGE_EN = '1'
 LANGUAGE_PT = '2'
@@ -279,18 +283,68 @@ def update_dependencies_crossplatform() -> None:
     finally:
         input(f"{Fore.YELLOW}\nPressione Enter para voltar ao menu...")
 
-def main_menu(user_language: str) -> None:
-    """Exibe o menu principal."""
+def vpn_tor_menu(vpn_manager: VPNTorManager, vpn_installer: VPNTorInstaller, lang: str):
+    """Menu dedicado à VPN+TOR."""
     while True:
         clear_console()
-        print(f"{Fore.YELLOW}{Style.BRIGHT}{'Menu Principal'.center(50, "-")}")
+        print(f"{Fore.CYAN}{'VPN + TOR'.center(50, '=')}")
+        print("1. Conectar VPN (+Tor)")
+        print("2. Desconectar VPN")
+        print("3. Ver Status")
+        print("4. Download + Instalação")
+        print("0. Voltar")
+
+        choice = input("\n[VPN] Escolha: ")
+
+        if choice == "1":
+            try:
+                vpn_manager.connect(use_tor=True)
+                print(f"{Fore.GREEN}Conexão estabelecida com sucesso!")
+            except Exception as e:
+                print(f"{Fore.RED}Erro na conexão: {e}")
+            input("\nPressione Enter para continuar...")
+
+        elif choice == "2":
+            vpn_manager.disconnect()
+            input("\nPressione Enter para continuar...")
+
+        elif choice == "3":
+            status = "✅ Ativa" if vpn_manager.is_connected else "❌ Inativa"
+            print(f"\nStatus: {status}")
+            input("\nPressione Enter para continuar...")
+
+        elif choice == "4":
+            try:
+                vpn_installer.install_all()
+                print(f"{Fore.GREEN}Instalação concluída com sucesso!")
+            except Exception as e:
+                print(f"{Fore.RED}Erro: {e}")
+                if "dependências" in str(e):
+                    print(f"{Fore.YELLOW}Atualizando dependências...")
+                    update_dependencies_crossplatform()
+            input("\nPressione Enter para continuar...")
+
+        elif choice == "0":
+            break
+
+def main_menu(user_language: str) -> None:
+    """Exibe o menu principal."""
+    vpn_manager = VPNTorManager()
+    vpn_installer = VPNTorInstaller()
+
+    while True:
+        clear_console()
+        print(f"{Fore.YELLOW}{Style.BRIGHT}{'Menu Principal'.center(50, '-')}")
         print("1. Ferramentas de Rede")
         print("2. Ferramentas de Engenharia Social")
         print("3. Atualizar Ferramenta")
         print("4. Atualizar Dependências")
-        print("5. Ver Logs")
+        print("5. VPN + TOR")
+        print("6. Ver Logs")
         print("0. Sair")
-        choice = input("Escolha uma opção: ")
+
+        choice = input("\n[>] Escolha uma opção: ")
+
         if choice == '0':
             goodbye_message(user_language)
             break
@@ -303,6 +357,8 @@ def main_menu(user_language: str) -> None:
         elif choice == '4':
             open_new_terminal("update-dependencies")
         elif choice == '5':
+            vpn_tor_menu(vpn_manager, vpn_installer, user_language)
+        elif choice == '6':
             view_logs()
         else:
             handle_invalid_option(user_language)
