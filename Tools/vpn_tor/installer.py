@@ -20,37 +20,44 @@ class VPNTorInstaller:
         print("✅ TOR instalado e ativo!")
 
     def install_all(self):
-        """Instala TOR e dependências de forma robusta"""
-    success = True  # Variável para controlar o estado da instalação
-
+        """Instala TOR e dependências de forma robusta no Kali Linux"""
     try:
-        print(f"{Fore.YELLOW}[*] Atualizando repositórios...")
+        print(f"{Fore.YELLOW}[*] Configurando repositórios...")
 
-        # 1. Adiciona repositório oficial do Tor
-        tor_repo = "deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org kali main"
+        # 1. Adicionar chave GPG do repositório Kali
+        subprocess.run([
+            "sudo", "apt-key", "adv", "--keyserver", "keyserver.ubuntu.com",
+            "--recv-keys", "827C8569F2518CC677FECA1AED65462EC8D5E4C5"
+        ], check=True)
+
+        # 2. Adicionar repositório oficial do Tor
+        tor_repo = """deb [arch=amd64 signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] \
+https://deb.torproject.org/torproject.org kali main"""
+
         with open("/etc/apt/sources.list.d/tor.list", "w") as f:
             f.write(tor_repo + "\n")
 
-        # 2. Adiciona chave GPG de forma segura
-        keyring_path = "/usr/share/keyrings/tor-archive-keyring.gpg"
+        # 3. Adicionar chave GPG do Tor
         subprocess.run([
-            "sudo", "wget", "-qO-",
+            "wget", "-qO-",
             "https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc",
-            "|", "sudo", "gpg", "--dearmor", "-o", keyring_path
+            "|", "sudo", "gpg", "--dearmor", "-o",
+            "/usr/share/keyrings/tor-archive-keyring.gpg"
         ], shell=True, check=True)
 
-        # 3. Atualiza e instala pacotes
+        # 4. Atualizar e instalar
+        print(f"{Fore.YELLOW}[*] Instalando pacotes...")
         subprocess.run(["sudo", "apt", "update"], check=True)
         subprocess.run([
             "sudo", "apt", "install", "-y",
             "tor", "torbrowser-launcher", "obfs4proxy"
         ], check=True)
 
-        print(f"{Fore.GREEN}[✔] Tor e dependências instalados com sucesso!")
+        print(f"{Fore.GREEN}[✔] Tor instalado com sucesso!")
 
     except subprocess.CalledProcessError as e:
-        print(f"{Fore.RED}[✘] Erro na instalação: {e.stderr.decode().strip() if e.stderr else str(e)}")
-        success = False
+        error_msg = e.stderr.decode().strip() if e.stderr else str(e)
+        print(f"{Fore.RED}[✘] Falha na instalação: {error_msg}")
+        print(f"{Fore.YELLOW}Dica: Execute manualmente 'sudo apt update' e verifique sua conexão com a internet")
     except Exception as e:
         print(f"{Fore.RED}[✘] Erro inesperado: {str(e)}")
-        success = False
