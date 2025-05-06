@@ -1,6 +1,5 @@
 import subprocess
 import logging
-from colorama import Fore
 import os
 
 class VPNManager:
@@ -9,11 +8,12 @@ class VPNManager:
         """Verifica se o protonvpn-cli está instalado."""
         try:
             subprocess.run(["protonvpn-cli", "--version"],
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE,
-                          check=True)
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         check=True)
             return True
-        except (subprocess.SubprocessError, FileNotFoundError):
+        except (subprocess.SubprocessError, FileNotFoundError) as e:
+            logging.error("Failed to check ProtonVPN installation: %s", str(e))
             return False
 
     @staticmethod
@@ -26,7 +26,7 @@ class VPNManager:
                                    check=True)
             return "Connected" in result.stdout
         except subprocess.SubprocessError as e:
-            logging.error(f"Erro ao verificar status da VPN: {str(e)}")
+            logging.error("Error checking VPN status: %s", str(e))
             return False
 
     @staticmethod
@@ -37,7 +37,7 @@ class VPNManager:
                           check=True)
             return "success"
         except subprocess.SubprocessError as e:
-            logging.error(f"Falha na conexão VPN: {str(e)}")
+            logging.error("VPN connection failed: %s", str(e))
             return str(e)
 
     @staticmethod
@@ -48,7 +48,7 @@ class VPNManager:
                           check=True)
             return "success"
         except subprocess.SubprocessError as e:
-            logging.error(f"Falha ao desconectar VPN: {str(e)}")
+            logging.error("Failed to disconnect VPN: %s", str(e))
             return str(e)
 
     @staticmethod
@@ -68,5 +68,8 @@ class VPNManager:
             os.remove("protonvpn-stable-release_1.0.3_all.deb")
             return "success"
         except subprocess.SubprocessError as e:
-            logging.error(f"Erro na instalação: {str(e)}")
+            logging.error("ProtonVPN installation error: %s", str(e))
+            return str(e)
+        except OSError as e:
+            logging.error("File operation failed during installation: %s", str(e))
             return str(e)
