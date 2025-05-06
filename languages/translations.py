@@ -1,3 +1,9 @@
+"""
+NetScan Pro - Translation Module
+
+This module contains all language strings and translations for the NetScan Pro tool.
+It provides multilingual support (English and Portuguese) for all user interface messages."""
+
 from colorama import Fore, Style
 
 LANGUAGES = {

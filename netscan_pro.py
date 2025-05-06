@@ -55,7 +55,7 @@ def ensure_admin_privileges() -> None:
                 print(f"{Fore.YELLOW}{LANGUAGES[LANGUAGE_EN]['admin']['linux']}")
                 subprocess.run(["sudo", sys.executable] + sys.argv, check=True)
                 sys.exit(0)
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError) as e:
         log_error(f"Elevation failed: {str(e)}")
         print(f"{Fore.RED}{LANGUAGES[LANGUAGE_EN]['common']['error']} {str(e)}")
         sys.exit(1)
@@ -82,9 +82,9 @@ def ensure_venv_support(user_language: str) -> None:
                 print(lang['success'])
                 ensure_venv_support(user_language)
                 return
-            except subprocess.SubprocessError as e:
-                log_error(f"Failed to install python3-venv: {e}")
-                print(f"{lang['fail']} {e}")
+            except subprocess.SubprocessError as subprocess_err:
+                log_error(f"Failed to install python3-venv: {subprocess_err}")
+                print(f"{lang['fail']} {subprocess_err}")
             sys.exit(1)
         else:
             print(lang['unsupported'])
