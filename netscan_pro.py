@@ -12,6 +12,7 @@ import logging
 import ctypes
 from colorama import init, Fore, Style
 from languages.translations import LANGUAGES
+from Tools.VPN.vpn_manager  import VPNManager
 
 # Constants
 LANGUAGE_EN = '1'
@@ -266,22 +267,78 @@ def update_dependencies_crossplatform(user_language: str) -> None:
     finally:
         input(LANGUAGES[user_language]['common']['press_enter'])
 
-def main_menu(user_language: str) -> None:
-    """Display main menu."""
-    lang = LANGUAGES[user_language]['menu']
+def vpn_menu(user_language: str) -> None:
+    """Menu de controle da VPN."""
+    lang = LANGUAGES[user_language]['vpn']
 
     while True:
         clear_console()
-        print(f"{Fore.YELLOW}{Style.BRIGHT}{lang['title'].center(50, '-')}")
-        for i, option in enumerate(lang['options'], 1):
-            print(f"{i}. {option}")
-        print(f"0. {lang['exit']}")
+        status = f"{Fore.GREEN}{lang['connected']}" if VPNManager.check_connection() else f"{Fore.RED}{lang['disconnected']}"
+        installed = f"{Fore.GREEN}✔ Instalado" if VPNManager.check_installation() else f"{Fore.RED}✖ Não instalado"
 
-        choice = input(lang['choose'])
-        if choice == '0':
-            goodbye_message(user_language)
+        print(f"{status} | {installed}\n")
+        print(f"{Fore.YELLOW}{lang['menu_title'].center(50, '-')}")
+        print(f"1. {lang['connect']}")
+        print(f"2. {lang['disconnect']}")
+        print(f"3. {lang['status']}")
+        print(f"4. {lang['install']}")
+        print(f"0. {lang['back']}")
+
+        choice = input("\nEscolha uma opção: ").strip()
+
+        if choice == "1":
+            result = VPNManager.connect()
+            if result == "success":
+                print(f"{Fore.GREEN}{lang['connected']}")
+            else:
+                print(f"{Fore.RED}{lang['install_failed']} {result}")
+            input(lang['press_enter'])
+
+        elif choice == "2":
+            result = VPNManager.disconnect()
+            if result == "success":
+                print(f"{Fore.GREEN}VPN desconectada!")
+            else:
+                print(f"{Fore.RED}Falha: {result}")
+            input(lang['press_enter'])
+
+        elif choice == "3":
+            clear_console()
+            subprocess.run(["protonvpn-cli", "status"], check=True)
+            input(lang['press_enter'])
+
+        elif choice == "4":
+            if VPNManager.check_installation():
+                print(f"{Fore.YELLOW}{lang['already_installed']}")
+                if input("Atualizar? (s/n): ").lower() != "s":
+                    continue
+
+            print(f"{Fore.YELLOW}{lang['installing']}")
+            result = VPNManager.install()
+            if result == "success":
+                print(f"{Fore.GREEN}{lang['install_success']}")
+                update_dependencies_crossplatform(user_language)
+            else:
+                print(f"{Fore.RED}{lang['install_failed']} {result}")
+            input(lang['press_enter'])
+
+        elif choice == "0":
             break
-        elif choice == '1':
+
+        else:
+            handle_invalid_option(user_language)
+
+def main_menu(user_language: str) -> None:
+    while True:
+        clear_console()
+        print(f"{Fore.YELLOW}{Style.BRIGHT}{LANGUAGES[user_language]['menu']['title'].center(50, '-')}")
+        for i, option in enumerate(LANGUAGES[user_language]['menu']['options'], 1):
+            print(f"{i}. {option}")
+        print(f"0. {LANGUAGES[user_language]['menu']['exit']}")
+
+        choice = input(LANGUAGES[user_language]['menu']['choose']).strip()
+
+        if choice == '1':
             open_new_terminal("network-tools")
         elif choice == '2':
             open_new_terminal("social-tools")
@@ -289,8 +346,18 @@ def main_menu(user_language: str) -> None:
             update_tool_from_github(user_language)
         elif choice == '4':
             update_dependencies_crossplatform(user_language)
-        elif choice == '5':
+        elif choice == '5':  # VPN
+            if not VPNManager.check_installation():
+                print(f"{Fore.RED}ProtonVPN não está instalado!")
+                if input("Instalar agora? (s/n): ").lower() == "s":
+                    vpn_menu(user_language)
+            else:
+                vpn_menu(user_language)
+        elif choice == '6':
             view_logs(user_language)
+        elif choice == '0':
+            goodbye_message(user_language)
+            break
         else:
             handle_invalid_option(user_language)
 
