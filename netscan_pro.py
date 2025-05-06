@@ -11,10 +11,6 @@ import sys
 import logging
 import ctypes
 from colorama import init, Fore, Style
-# Módulos internos
-from Tools.vpn_tor.manager import VPNTorManager
-from Tools.vpn_tor.installer import VPNTorInstaller
-from core.updates import update_dependencies_crossplatform
 
 LANGUAGE_EN = '1'
 LANGUAGE_PT = '2'
@@ -86,7 +82,7 @@ def ensure_venv_support() -> None:
                 # Verifica novamente após instalação
                 ensure_venv_support()
                 return
-            except subprocess.SubprocessError as subprocess_err:
+            except subprocess.SubprocessError as subprocess_err:  # Nome mais descritivo
                 log_error(f"Falha ao instalar python3-venv: {subprocess_err}")
                 print(f"{Fore.RED}Erro ao instalar venv: {subprocess_err}")
             sys.exit(1)
@@ -156,9 +152,11 @@ def view_logs() -> None:
 def limpar_requirements(caminho_arquivo="requirements.txt") -> None:
     """Remove pacotes inválidos/obsoletos do arquivo requirements.txt."""
     pacotes_invalidos = {
+        # Bibliotecas padrão do Python
         '__builtin__', '__pypy__', '_abcoll', '_cmsgpack', '_typeshed', '_winreg',
         'htmlentitydefs', 'httplib', 'Queue', 'StringIO', 'urlparse', 'xmlrpclib',
         'dummy_thread', 'ntlm', 'java', 'js', 'pyodide', 'thread', 'urllib2', 'tomllib',
+        # Outros falsos positivos
         'attr', 'brotli', 'ctags', 'ConfigParser', 'HTMLParser'
     }
 
@@ -232,51 +230,67 @@ def find_venv_python_executable(venv_path: str) -> str:
 
     raise FileNotFoundError(f"Executável do ambiente virtual não encontrado: {venv_path}")
 
-def vpn_tor_menu(vpn_manager, vpn_installer, lang):
-    """Menu VPN+Tor com verificação de instalação"""
-    while True:
-        clear_console()
-        print(f"{Fore.CYAN}{' VPN + TOR '.center(50, '=')}")
+def update_dependencies_crossplatform() -> None:
+    """Atualiza dependências de forma totalmente automática, com filtros avançados."""
+    clear_console()
+    print(f"{Fore.YELLOW}Iniciando atualização de dependências...")
 
-        # Verifica status antes de mostrar opções
-        tor_installed = vpn_installer.check_installation()
-        status = f"{Fore.GREEN}✔ Instalado" if tor_installed else f"{Fore.RED}✖ Não instalado"
+    venv_path = ".venv"
+    is_windows = platform.system() == "Windows"
+    python_bin = os.path.join(venv_path,
+                              "Scripts" if is_windows else "bin",
+                              "python.exe" if is_windows else "python3")
+    pipreqs_path = os.path.join(venv_path,
+                                "Scripts" if is_windows else "bin",
+                                "pipreqs.exe" if is_windows else "pipreqs")
 
-        print(f"Status: {status}{Style.RESET_ALL}\n")
-        print("1. Conectar VPN (+Tor)")
-        print("2. Desconectar VPN")
-        print("3. Ver Status Detalhado")
-        print("4. Instalar/Atualizar Tor")
-        print("0. Voltar")
+    try:
+        # Etapa 1: Configurar ambiente
+        ensure_venv_support()
+        if not os.path.exists(python_bin):
+            print(f"{Fore.CYAN}Criando ambiente virtual (.venv)...")
+            subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
+            time.sleep(5)  # Espera a criação do ambiente
 
-        choice = input("\n[VPN] Escolha: ")
+        # Etapa 2: Instalar pipreqs
+        print(f"{Fore.CYAN}Instalando pipreqs...")
+        subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pipreqs"], check=True)
 
-        if choice == "4":
-            clear_console()
-            if vpn_installer.install_all():
-                print(f"{Fore.GREEN}\n[+] Tor instalado com sucesso!")
-            else:
-                print(f"{Fore.RED}\n[-] Falha na instalação")
-            input("\nPressione Enter para continuar...")
+        # Etapa 3: Gerar requirements.txt
+        print(f"{Fore.CYAN}Gerando requirements.txt...")
+        subprocess.run([pipreqs_path, ".", "--force", "--encoding", "utf-8"], check=True)
+
+        # Etapa 4: Filtrar pacotes inválidos
+        limpar_requirements()
+
+        # Etapa 5: Verificar pacotes suspeitos
+        verificar_requirements()
+
+        print(f"{Fore.GREEN}[✔] Dependências atualizadas com sucesso!")
+        print(f"{Fore.GREEN}Arquivo gerado: {os.path.abspath('requirements.txt')}")
+
+    except subprocess.CalledProcessError as e:
+        error_msg = f"Erro no subprocesso: {e.stderr.decode().strip() if e.stderr else str(e)}"
+        log_error(error_msg)
+        print(f"{Fore.RED}[✘] Falha na execução: {error_msg}")
+    except (OSError, PermissionError, FileNotFoundError) as e:
+        log_error(f"Erro crítico: {str(e)}")
+        print(f"{Fore.RED}[✘] Erro inesperado: {str(e)}")
+    finally:
+        input(f"{Fore.YELLOW}\nPressione Enter para voltar ao menu...")
 
 def main_menu(user_language: str) -> None:
     """Exibe o menu principal."""
-    vpn_manager = VPNTorManager()
-    vpn_installer = VPNTorInstaller()
-
     while True:
         clear_console()
-        print(f"{Fore.YELLOW}{Style.BRIGHT}{'Menu Principal'.center(50, '-')}")
+        print(f"{Fore.YELLOW}{Style.BRIGHT}{'Menu Principal'.center(50, "-")}")
         print("1. Ferramentas de Rede")
         print("2. Ferramentas de Engenharia Social")
         print("3. Atualizar Ferramenta")
         print("4. Atualizar Dependências")
-        print("5. VPN + TOR")
-        print("6. Ver Logs")
+        print("5. Ver Logs")
         print("0. Sair")
-
         choice = input("Escolha uma opção: ")
-
         if choice == '0':
             goodbye_message(user_language)
             break
@@ -289,8 +303,6 @@ def main_menu(user_language: str) -> None:
         elif choice == '4':
             open_new_terminal("update-dependencies")
         elif choice == '5':
-            vpn_tor_menu(vpn_manager, vpn_installer, user_language)
-        elif choice == '6':
             view_logs()
         else:
             handle_invalid_option(user_language)
