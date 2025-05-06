@@ -2,7 +2,8 @@
 NetScan Pro - Translation Module
 
 This module contains all language strings and translations for the NetScan Pro tool.
-It provides multilingual support (English and Portuguese) for all user interface messages."""
+It provides multilingual support (English and Portuguese) for all user interface messages.
+"""
 
 from colorama import Fore, Style
 
@@ -43,6 +44,7 @@ LANGUAGES = {
                 "Social Engineering Tools",
                 "Update Tool",
                 "Update Dependencies",
+                "VPN",
                 "View Logs"
             ],
             'exit': "Exit",
@@ -58,6 +60,32 @@ LANGUAGES = {
         },
         'social': {
             'simulated': "Social engineering tools (simulated)..."
+        },
+        'vpn': {
+            'menu_title': "PROTONVPN MENU",
+            'connect': "Connect VPN",
+            'disconnect': "Disconnect VPN",
+            'status': "Detailed Status",
+            'install': "Install/Update ProtonVPN",
+            'back': "Back to Main Menu",
+            'connected': "✔ VPN Connected",
+            'disconnected': "✖ VPN Disconnected",
+            'installing': "Installing ProtonVPN...",
+            'updating': "Updating ProtonVPN...",
+            'already_installed': "ProtonVPN is already installed.",
+            'install_success': "ProtonVPN installed successfully!",
+            'install_failed': "ProtonVPN installation failed:",
+            'press_enter': "Press Enter to continue...",
+            'not_installed': "ProtonVPN is not installed!",
+            'install_prompt': "Would you like to install now? (y/n): ",
+            'connection_success': "VPN connection established successfully!",
+            'connection_failed': "Failed to connect to VPN:",
+            'disconnection_success': "VPN disconnected successfully!",
+            'disconnection_failed': "Failed to disconnect VPN:",
+            'status_checking': "Checking VPN status...",
+            'status_connected': "Status: Connected (Secure)",
+            'status_disconnected': "Status: Disconnected",
+            'installation_instructions': "Please wait while we install ProtonVPN..."
         }
     },
     '2': {  # Português
@@ -96,6 +124,7 @@ LANGUAGES = {
                 "Ferramentas de Engenharia Social",
                 "Atualizar Ferramenta",
                 "Atualizar Dependências",
+                "VPN",
                 "Ver Logs"
             ],
             'exit': "Sair",
@@ -111,6 +140,32 @@ LANGUAGES = {
         },
         'social': {
             'simulated': "Ferramentas de engenharia social (simulado)..."
+        },
+        'vpn': {
+            'menu_title': "MENU PROTONVPN",
+            'connect': "Conectar VPN",
+            'disconnect': "Desconectar VPN",
+            'status': "Status Detalhado",
+            'install': "Instalar/Atualizar ProtonVPN",
+            'back': "Voltar ao Menu Principal",
+            'connected': "✔ VPN Conectada",
+            'disconnected': "✖ VPN Desconectada",
+            'installing': "Instalando ProtonVPN...",
+            'updating': "Atualizando ProtonVPN...",
+            'already_installed': "ProtonVPN já está instalado.",
+            'install_success': "ProtonVPN instalado com sucesso!",
+            'install_failed': "Falha na instalação do ProtonVPN:",
+            'press_enter': "Pressione Enter para continuar...",
+            'not_installed': "ProtonVPN não está instalado!",
+            'install_prompt': "Deseja instalar agora? (s/n): ",
+            'connection_success': "Conexão VPN estabelecida com sucesso!",
+            'connection_failed': "Falha ao conectar à VPN:",
+            'disconnection_success': "VPN desconectada com sucesso!",
+            'disconnection_failed': "Falha ao desconectar VPN:",
+            'status_checking': "Verificando status da VPN...",
+            'status_connected': "Status: Conectado (Seguro)",
+            'status_disconnected': "Status: Desconectado",
+            'installation_instructions': "Por favor aguarde enquanto instalamos o ProtonVPN..."
         }
     }
 }
