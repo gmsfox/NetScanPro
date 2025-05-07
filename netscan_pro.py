@@ -268,58 +268,57 @@ def update_dependencies_crossplatform(user_language: str) -> None:
         input(LANGUAGES[user_language]['common']['press_enter'])
 
 def vpn_menu(user_language: str) -> None:
-    """Menu de controle da VPN."""
     lang = LANGUAGES[user_language]['vpn']
 
     while True:
         clear_console()
-        status = f"{Fore.GREEN}{lang['connected']}" if VPNManager.check_connection() else f"{Fore.RED}{lang['disconnected']}"
-        installed = f"{Fore.GREEN}✔ Instalado" if VPNManager.check_installation() else f"{Fore.RED}✖ Não instalado"
 
-        print(f"{status} | {installed}\n")
+        # Verifica instalação automaticamente
+        if not VPNManager.check_installation():
+            print(f"{Fore.YELLOW}{lang['not_installed']}")
+            print(f"{Fore.CYAN}{lang['installation_instructions']}")
+
+            success, message = VPNManager.install()
+            if success:
+                print(f"{Fore.GREEN}{lang['install_success']}")
+            else:
+                print(f"{Fore.RED}{lang['install_failed']}: {message}")
+                input(lang['press_enter'])
+                continue
+
+        # Menu principal da VPN
+        status_ok, status_msg = VPNManager.status()
+        status = f"{Fore.GREEN}{lang['connected']}" if "Connected" in status_msg else f"{Fore.RED}{lang['disconnected']}"
+
+        print(f"\nStatus: {status}")
         print(f"{Fore.YELLOW}{lang['menu_title'].center(50, '-')}")
         print(f"1. {lang['connect']}")
         print(f"2. {lang['disconnect']}")
         print(f"3. {lang['status']}")
-        print(f"4. {lang['install']}")
         print(f"0. {lang['back']}")
 
         choice = input("\nEscolha uma opção: ").strip()
 
         if choice == "1":
-            result = VPNManager.connect()
-            if result == "success":
-                print(f"{Fore.GREEN}{lang['connected']}")
+            success, message = VPNManager.connect()
+            if success:
+                print(f"{Fore.GREEN}{lang['connection_success']}")
             else:
-                print(f"{Fore.RED}{lang['install_failed']} {result}")
+                print(f"{Fore.RED}{lang['connection_failed']}: {message}")
             input(lang['press_enter'])
 
         elif choice == "2":
-            result = VPNManager.disconnect()
-            if result == "success":
-                print(f"{Fore.GREEN}VPN desconectada!")
+            success, message = VPNManager.disconnect()
+            if success:
+                print(f"{Fore.GREEN}{lang['disconnection_success']}")
             else:
-                print(f"{Fore.RED}Falha: {result}")
+                print(f"{Fore.RED}{lang['disconnection_failed']}: {message}")
             input(lang['press_enter'])
 
         elif choice == "3":
             clear_console()
-            subprocess.run(["protonvpn-cli", "status"], check=True)
-            input(lang['press_enter'])
-
-        elif choice == "4":
-            if VPNManager.check_installation():
-                print(f"{Fore.YELLOW}{lang['already_installed']}")
-                if input("Atualizar? (s/n): ").lower() != "s":
-                    continue
-
-            print(f"{Fore.YELLOW}{lang['installing']}")
-            result = VPNManager.install()
-            if result == "success":
-                print(f"{Fore.GREEN}{lang['install_success']}")
-                update_dependencies_crossplatform(user_language)
-            else:
-                print(f"{Fore.RED}{lang['install_failed']} {result}")
+            _, status_msg = VPNManager.status()
+            print(status_msg)
             input(lang['press_enter'])
 
         elif choice == "0":

@@ -1,75 +1,61 @@
 import subprocess
 import logging
 import os
+import sys
+from typing import Tuple
 
 class VPNManager:
     @staticmethod
+    def _run_command(cmd: list) -> Tuple[bool, str]:
+        """Executa um comando e retorna (success, message)"""
+        try:
+            result = subprocess.run(cmd, check=True,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE,
+                                  text=True)
+            return True, result.stdout.strip()
+        except subprocess.CalledProcessError as e:
+            error_msg = e.stderr.strip() or "Unknown error"
+            return False, error_msg
+
+    @staticmethod
     def check_installation() -> bool:
-        """Verifica se o protonvpn-cli está instalado."""
-        try:
-            subprocess.run(["protonvpn-cli", "--version"],
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         check=True)
-            return True
-        except (subprocess.SubprocessError, FileNotFoundError) as e:
-            logging.error("Failed to check ProtonVPN installation: %s", str(e))
+        """Verifica se o protonvpn-cli está instalado e funcional"""
+        success, _ = VPNManager._run_command(["which", "protonvpn-cli"])
+        if not success:
             return False
 
-    @staticmethod
-    def check_connection() -> bool:
-        """Verifica se a VPN está ativa."""
-        try:
-            result = subprocess.run(["protonvpn-cli", "status"],
-                                   capture_output=True,
-                                   text=True,
-                                   check=True)
-            return "Connected" in result.stdout
-        except subprocess.SubprocessError as e:
-            logging.error("Error checking VPN status: %s", str(e))
-            return False
+        success, _ = VPNManager._run_command(["protonvpn-cli", "--version"])
+        return success
 
     @staticmethod
-    def connect() -> str:
-        """Conecta à ProtonVPN."""
-        try:
-            subprocess.run(["protonvpn-cli", "connect", "--fastest"],
-                          check=True)
-            return "success"
-        except subprocess.SubprocessError as e:
-            logging.error("VPN connection failed: %s", str(e))
-            return str(e)
-
-    @staticmethod
-    def disconnect() -> str:
-        """Desconecta da ProtonVPN."""
-        try:
-            subprocess.run(["protonvpn-cli", "disconnect"],
-                          check=True)
-            return "success"
-        except subprocess.SubprocessError as e:
-            logging.error("Failed to disconnect VPN: %s", str(e))
-            return str(e)
-
-    @staticmethod
-    def install() -> str:
-        """Instala/Atualiza a ProtonVPN."""
-        install_commands = [
-            ["sudo", "apt", "update"],
-            ["wget", "https://repo.protonvpn.com/debian/dists/stable/main/binary-all/protonvpn-stable-release_1.0.3_all.deb"],
-            ["sudo", "dpkg", "-i", "protonvpn-stable-release_1.0.3_all.deb"],
-            ["sudo", "apt", "update"],
-            ["sudo", "apt", "install", "-y", "protonvpn"]
+    def install() -> Tuple[bool, str]:
+        """Instala o ProtonVPN automaticamente"""
+        steps = [
+            ("Atualizando pacotes", ["sudo", "apt", "update"]),
+            ("Instalando dependências", ["sudo", "apt", "install", "-y", "openvpn", "dialog", "python3-pip", "python3-setuptools"]),
+            ("Baixando pacote ProtonVPN", ["wget", "https://repo.protonvpn.com/debian/dists/stable/main/binary-all/protonvpn-stable-release_1.0.3_all.deb"]),
+            ("Instalando repositório", ["sudo", "dpkg", "-i", "protonvpn-stable-release_1.0.3_all.deb"]),
+            ("Atualizando repositórios", ["sudo", "apt", "update"]),
+            ("Instalando ProtonVPN", ["sudo", "apt", "install", "-y", "protonvpn"]),
+            ("Limpando arquivos", ["rm", "-f", "protonvpn-stable-release_1.0.3_all.deb"])
         ]
 
-        try:
-            for cmd in install_commands:
-                subprocess.run(cmd, check=True)
-            os.remove("protonvpn-stable-release_1.0.3_all.deb")
-            return "success"
-        except subprocess.SubprocessError as e:
-            logging.error("ProtonVPN installation error: %s", str(e))
-            return str(e)
-        except OSError as e:
-            logging.error("File operation failed during installation: %s", str(e))
-            return str(e)
+        for description, cmd in steps:
+            success, message = VPNManager._run_command(cmd)
+            if not success:
+                return False, f"Falha no passo '{description}': {message}"
+
+        return True, "Instalação concluída com sucesso!"
+
+    @staticmethod
+    def connect() -> Tuple[bool, str]:
+        return VPNManager._run_command(["protonvpn-cli", "connect", "--fastest"])
+
+    @staticmethod
+    def disconnect() -> Tuple[bool, str]:
+        return VPNManager._run_command(["protonvpn-cli", "disconnect"])
+
+    @staticmethod
+    def status() -> Tuple[bool, str]:
+        return VPNManager._run_command(["protonvpn-cli", "status"])
