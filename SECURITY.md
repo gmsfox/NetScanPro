@@ -51,9 +51,14 @@ Cada usuário é responsável por suas próprias ações. Se você não tem perm
 <br/>
 
 ⚖️ **USO ÉTICO E LEGAL**
-Licença: [Ex: GPL-3.0, MIT, ou outra] – Obriga a preservação desta política em forks.
-
-Restrições Explícitas:
+- **Licença:** [Apache 2.0](LICENSE) –  
+  - **Você DEVE:**  
+    - Manter o arquivo `LICENSE` e esta política (`SECURITY.md`) em *forks*.  
+    - Incluir aviso de copyright original.  
+  - **Você NÃO PODE:**  
+    - Nos responsabilizar por uso malicioso (consulte Seção 8 da licença).
+    <br/>
+**Restrições Explícitas:**
 
 - Proibido uso em redes de terceiros sem consentimento por escrito.
 
@@ -62,6 +67,8 @@ Restrições Explícitas:
 **Recomendação:**
 
 - Use apenas em ambientes controlados ou com permissão legal (pentest autorizado).
+
+   <br/>
 
 🛡️ **MEDIDAS DE PROTEÇÃO DO PROJETO
 Autoverificação:**
@@ -73,6 +80,8 @@ Autoverificação:**
 **Sem Backdoors:**
 
 - O código é auditável – nenhuma comunicação externa oculta é implementada.
+
+<br/>
 
 📌 **PENALIDADES POR USO INADEQUADO**
 Violar esta política pode resultar em:
