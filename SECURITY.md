@@ -7,7 +7,7 @@ NÃO USE ISSUES PÚBLICOS, FORUMS OU REDES SOCIAIS PARA REPORTAR FALHAS DE SEGUR
 📧 Envie um e-mail criptografado (PGP) para:
 
 Email: gmsfox@protonmail.com<br/>
-Chave PGP:  
+Chave PGP: https://github.com/gmsfox/NetScanPro/tree/main/asc <br/>
 Assunto: [VULNERABILIDADE GRAVE] NetScan Pro - [NOME DA FALHA].
 
 <br/>
