@@ -120,7 +120,7 @@ def handle_invalid_option(user_language: str) -> None:
 @auto_clear
 def loading_screen() -> None:
     """Loading screen."""
-    print(LANGUAGES[LANGUAGE_PT]['common']['loading'].center(60))
+    print(LANGUAGES[LANGUAGE_EN]['common']['loading'].center(60))
 
 def open_new_terminal(option: str) -> None:
     """Open new terminal window."""
