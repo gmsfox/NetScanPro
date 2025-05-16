@@ -273,18 +273,29 @@ def vpn_menu(user_language: str) -> None:
     while True:
         clear_console()
 
-        # Verifica instalação automaticamente
         if not VPNManager.check_installation():
             print(f"{Fore.YELLOW}{lang['not_installed']}")
             print(f"{Fore.CYAN}{lang['installation_instructions']}")
 
+            # Tentativa principal
             success, message = VPNManager.install()
-            if success:
-                print(f"{Fore.GREEN}{lang['install_success']}")
-            else:
-                print(f"{Fore.RED}{lang['install_failed']}: {message}")
+
+            if not success:
+                # Tratamento específico de erros
+                if "GPG" in message:
+                    print(f"{lang['gpg_error']} {message}")
+                elif "repo" in message.lower():
+                    print(f"{lang['repo_error']} {message}")
+                elif "depend" in message.lower():
+                    print(f"{lang['dependency_error']} {message}")
+                else:
+                    print(f"{lang['critical_error']} {message}")
+
                 input(lang['press_enter'])
                 continue
+
+            print(f"{Fore.GREEN}{lang['install_success']}")
+            input(lang['press_enter'])
 
         # Menu principal da VPN
         status_ok, status_msg = VPNManager.status()

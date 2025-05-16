@@ -84,7 +84,14 @@ LANGUAGES = {
             'status_checking': f"{Fore.YELLOW}Checking VPN status...",
             'status_connected': f"{Fore.GREEN}✓ Secure Connection",
             'status_disconnected': f"{Fore.RED}No VPN Connection",
-            'press_enter': "Press Enter to continue..."
+            'press_enter': "Press Enter to continue...",
+            'gpg_error': f"{Fore.RED}Security key error:",
+            'repo_error': f"{Fore.RED}Repository problem:",
+            'install_retry': f"{Fore.YELLOW}Attempting automatic repair...",
+            'critical_error': f"{Fore.RED}Critical installation failure:",
+            'dependency_error': f"{Fore.RED}Dependency error:",
+            'gpg_success': f"{Fore.GREEN}GPG key configured successfully!",
+            'repo_success': f"{Fore.GREEN}Repository configured correctly!"
         }
     },
     '2': {  # Português
@@ -164,7 +171,14 @@ LANGUAGES = {
             'status_checking': f"{Fore.YELLOW}Verificando status da VPN...",
             'status_connected': f"{Fore.GREEN}✓ Conexão Segura",
             'status_disconnected': f"{Fore.RED}Sem conexão VPN",
-            'press_enter': "Pressione Enter para continuar..."
+            'press_enter': "Pressione Enter para continuar...",
+            'gpg_error': f"{Fore.RED}Erro na chave de segurança:",
+            'repo_error': f"{Fore.RED}Problema no repositório:",
+            'install_retry': f"{Fore.YELLOW}Tentando reparar automaticamente...",
+            'critical_error': f"{Fore.RED}Falha crítica na instalação:",
+            'dependency_error': f"{Fore.RED}Erro nas dependências:",
+            'gpg_success': f"{Fore.GREEN}Chave GPG configurada com sucesso!",
+            'repo_success': f"{Fore.GREEN}Repositório configurado corretamente!"
         }
     }
 }

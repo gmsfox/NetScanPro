@@ -30,23 +30,58 @@ class VPNManager:
 
     @staticmethod
     def install() -> Tuple[bool, str]:
-        """Instala o ProtonVPN automaticamente"""
-        steps = [
-            ("Atualizando pacotes", ["sudo", "apt", "update"]),
-            ("Instalando dependências", ["sudo", "apt", "install", "-y", "openvpn", "dialog", "python3-pip", "python3-setuptools"]),
-            ("Baixando pacote ProtonVPN", ["wget", "https://repo.protonvpn.com/debian/dists/stable/main/binary-all/protonvpn-stable-release_1.0.3_all.deb"]),
-            ("Instalando repositório", ["sudo", "dpkg", "-i", "protonvpn-stable-release_1.0.3_all.deb"]),
-            ("Atualizando repositórios", ["sudo", "apt", "update"]),
-            ("Instalando ProtonVPN", ["sudo", "apt", "install", "-y", "protonvpn"]),
-            ("Limpando arquivos", ["rm", "-f", "protonvpn-stable-release_1.0.3_all.deb"])
-        ]
+        """Instala o ProtonVPN com tratamento completo de erros"""
+        try:
+            # 1. Instalar dependências necessárias
+            deps = [
+                ["sudo", "apt", "update"],
+                ["sudo", "apt", "install", "-y", "wget", "gnupg2", "software-properties-common"]
+            ]
 
-        for description, cmd in steps:
-            success, message = VPNManager._run_command(cmd)
+            for cmd in deps:
+                success, msg = VPNManager._run_command(cmd)
+                if not success:
+                    return False, f"Erro instalando dependências: {msg}"
+
+            # 2. Adicionar chave GPG manualmente
+            gpg_commands = [
+                ["wget", "-qO-", "https://repo.protonvpn.com/debian/public_key.asc"],
+                ["sudo", "gpg", "--dearmor", "-o", "/usr/share/keyrings/protonvpn-archive-keyring.gpg"]
+            ]
+
+            for cmd in gpg_commands:
+                success, msg = VPNManager._run_command(cmd)
+                if not success:
+                    return False, f"Erro configurando chave GPG: {msg}"
+
+            # 3. Configurar repositório
+            repo_cmd = [
+                "sudo", "sh", "-c",
+                'echo "deb [arch=all signed-by=/usr/share/keyrings/protonvpn-archive-keyring.gpg] '
+                'https://repo.protonvpn.com/debian stable main" > '
+                '/etc/apt/sources.list.d/protonvpn-stable.list'
+            ]
+
+            success, msg = VPNManager._run_command(repo_cmd)
             if not success:
-                return False, f"Falha no passo '{description}': {message}"
+                return False, f"Erro configurando repositório: {msg}"
 
-        return True, "Instalação concluída com sucesso!"
+            # 4. Instalação final
+            install_steps = [
+                ["sudo", "apt", "update"],
+                ["sudo", "apt", "install", "-y", "protonvpn"]
+            ]
+
+            for cmd in install_steps:
+                success, msg = VPNManager._run_command(cmd)
+                if not success:
+                    return False, f"Erro na instalação: {msg}"
+
+            return True, "Instalação concluída com sucesso!"
+
+        except Exception as e:
+            logging.error("Erro crítico durante instalação: %s", str(e))
+            return False, f"Erro crítico: {str(e)}"
 
     @staticmethod
     def connect() -> Tuple[bool, str]:
