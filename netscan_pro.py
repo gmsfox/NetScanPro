@@ -118,7 +118,7 @@ def handle_invalid_option(user_language: str) -> None:
     print(LANGUAGES[user_language]['common']['invalid'])
 
 @auto_clear
-def loading_screen(user_language: str = LANGUAGE_EN) -> None:
+def loading_screen(user_language: str) -> None:
     """Loading screen."""
     print(LANGUAGES[user_language]['common']['loading'].center(60))
 
@@ -400,7 +400,7 @@ def main() -> None:
     user_language = language_option if language_option in ('1', '2') else LANGUAGE_EN
 
     welcome_message(user_language)
-    loading_screen()
+    loading_screen(user_language)
     main_menu(user_language)
 
 if __name__ == "__main__":
