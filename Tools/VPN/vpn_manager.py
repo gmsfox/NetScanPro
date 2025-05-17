@@ -1,96 +1,145 @@
 import subprocess
 import logging
 import os
-import sys
+import re
+import requests
 from typing import Tuple
 
 class VPNManager:
     @staticmethod
     def _run_command(cmd: list) -> Tuple[bool, str]:
-        """Executa um comando e retorna (success, message)"""
+        """Executa comandos com tratamento robusto de erros"""
         try:
-            result = subprocess.run(cmd, check=True,
+            result = subprocess.run(cmd,
+                                  check=True,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE,
-                                  text=True)
+                                  text=True,
+                                  timeout=30)
             return True, result.stdout.strip()
         except subprocess.CalledProcessError as e:
-            error_msg = e.stderr.strip() or "Unknown error"
+            error_msg = e.stderr.strip() or f"Command failed with code {e.returncode}"
             return False, error_msg
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
+    def _get_latest_deb_version() -> Tuple[bool, str]:
+        """Obtém a última versão do pacote .deb do repositório"""
+        try:
+            repo_url = "https://repo.protonvpn.com/debian/dists/stable/main/binary-all/"
+            response = requests.get(repo_url, timeout=10)
+            response.raise_for_status()
+
+            deb_versions = re.findall(
+                r'protonvpn-stable-release_(\d+\.\d+\.\d+)_all\.deb',
+                response.text
+            )
+
+            if not deb_versions:
+                return False, "No .deb packages found in repository"
+
+            latest = max(deb_versions, key=lambda x: tuple(map(int, x.split('.'))))
+            return True, latest
+
+        except Exception as e:
+            logging.error(f"Version check failed: {str(e)}")
+            return False, str(e)
+
+    @staticmethod
+    def _download_deb_package(version: str) -> Tuple[bool, str]:
+        """Baixa o pacote .deb específico"""
+        try:
+            deb_url = f"https://repo.protonvpn.com/debian/dists/stable/main/binary-all/protonvpn-stable-release_{version}_all.deb"
+            local_file = f"protonvpn-stable-release_{version}_all.deb"
+
+            with requests.get(deb_url, stream=True, timeout=30) as r:
+                r.raise_for_status()
+                with open(local_file, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        f.write(chunk)
+            return True, local_file
+        except Exception as e:
+            logging.error(f"Download failed: {str(e)}")
+            return False, str(e)
 
     @staticmethod
     def check_installation() -> bool:
-        """Verifica se o protonvpn-cli está instalado e funcional"""
-        success, _ = VPNManager._run_command(["which", "protonvpn-cli"])
-        if not success:
-            return False
+        """Verificação robusta da instalação"""
+        checks = [
+            ["which", "protonvpn-cli"],
+            ["protonvpn-cli", "--version"],
+            ["dpkg", "-l", "protonvpn"]
+        ]
 
-        success, _ = VPNManager._run_command(["protonvpn-cli", "--version"])
-        return success
+        for cmd in checks:
+            success, _ = VPNManager._run_command(cmd)
+            if not success:
+                return False
+        return True
 
     @staticmethod
     def install() -> Tuple[bool, str]:
-        """Instala o ProtonVPN com tratamento completo de erros"""
-        try:
-            # 1. Instalar dependências necessárias
-            deps = [
-                ["sudo", "apt", "update"],
-                ["sudo", "apt", "install", "-y", "wget", "gnupg2", "software-properties-common"]
-            ]
+        """Instalação completa com gerenciamento de versões"""
+        # Obter última versão
+        success, version = VPNManager._get_latest_deb_version()
+        if not success:
+            return False, f"Failed to determine latest version: {version}"
 
-            for cmd in deps:
-                success, msg = VPNManager._run_command(cmd)
-                if not success:
-                    return False, f"Erro instalando dependências: {msg}"
+        # Baixar pacote
+        success, deb_file = VPNManager._download_deb_package(version)
+        if not success:
+            return False, f"Failed to download package: {deb_file}"
 
-            # 2. Adicionar chave GPG manualmente
-            gpg_commands = [
-                ["wget", "-qO-", "https://repo.protonvpn.com/debian/public_key.asc"],
-                ["sudo", "gpg", "--dearmor", "-o", "/usr/share/keyrings/protonvpn-archive-keyring.gpg"]
-            ]
+        # Sequência de instalação
+        steps = [
+            ("Installing dependencies", ["sudo", "apt", "install", "-y", "gnupg", "wget"]),
+            ("Adding GPG key", ["wget", "-qO-", "https://repo.protonvpn.com/debian/public_key.asc",
+                              "|", "sudo", "gpg", "--dearmor",
+                              "-o", "/usr/share/keyrings/protonvpn-archive-keyring.gpg"]),
+            ("Installing package", ["sudo", "dpkg", "-i", deb_file]),
+            ("Fixing dependencies", ["sudo", "apt", "--fix-broken", "install"]),
+            ("Updating repositories", ["sudo", "apt", "update"]),
+            ("Installing ProtonVPN", ["sudo", "apt", "install", "-y", "protonvpn"])
+        ]
 
-            for cmd in gpg_commands:
-                success, msg = VPNManager._run_command(cmd)
-                if not success:
-                    return False, f"Erro configurando chave GPG: {msg}"
-
-            # 3. Configurar repositório
-            repo_cmd = [
-                "sudo", "sh", "-c",
-                'echo "deb [arch=all signed-by=/usr/share/keyrings/protonvpn-archive-keyring.gpg] '
-                'https://repo.protonvpn.com/debian stable main" > '
-                '/etc/apt/sources.list.d/protonvpn-stable.list'
-            ]
-
-            success, msg = VPNManager._run_command(repo_cmd)
+        for step_name, cmd in steps:
+            success, error = VPNManager._run_command(cmd)
             if not success:
-                return False, f"Erro configurando repositório: {msg}"
+                return False, f"{step_name} failed: {error}"
 
-            # 4. Instalação final
-            install_steps = [
-                ["sudo", "apt", "update"],
-                ["sudo", "apt", "install", "-y", "protonvpn"]
-            ]
+        return True, f"Successfully installed ProtonVPN {version}"
 
-            for cmd in install_steps:
-                success, msg = VPNManager._run_command(cmd)
-                if not success:
-                    return False, f"Erro na instalação: {msg}"
-
-            return True, "Instalação concluída com sucesso!"
-
+    @staticmethod
+    def cleanup():
+        """Remove arquivos .deb antigos"""
+        try:
+            for f in os.listdir('.'):
+                if f.startswith('protonvpn-stable-release_') and f.endswith('.deb'):
+                    os.remove(f)
         except Exception as e:
-            logging.error("Erro crítico durante instalação: %s", str(e))
-            return False, f"Erro crítico: {str(e)}"
+            logging.warning(f"Cleanup failed: {str(e)}")
 
     @staticmethod
     def connect() -> Tuple[bool, str]:
+        """Conecta à VPN"""
         return VPNManager._run_command(["protonvpn-cli", "connect", "--fastest"])
 
     @staticmethod
     def disconnect() -> Tuple[bool, str]:
+        """Desconecta da VPN"""
         return VPNManager._run_command(["protonvpn-cli", "disconnect"])
 
     @staticmethod
     def status() -> Tuple[bool, str]:
+        """Verifica status da VPN"""
         return VPNManager._run_command(["protonvpn-cli", "status"])
+
+    @staticmethod
+    def login(username: str, password: str) -> Tuple[bool, str]:
+        """Realiza login na VPN"""
+        return VPNManager._run_command([
+            "protonvpn-cli", "login",
+            "--username", username,
+            "--password", password
+        ])
