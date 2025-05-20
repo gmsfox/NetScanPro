@@ -9,18 +9,18 @@ from pathlib import Path
 class VPNManager:
     @staticmethod
     def _executar_comando(cmd: list) -> Tuple[bool, str]:
-        """Executa comandos com tratamento de erros robusto"""
+        """Executa comandos com tratamento robusto de erros"""
         try:
-            resultado = subprocess.run(cmd,
-                                    check=True,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
-                                    text=True,
-                                    timeout=120)
-            return True, resultado.stdout.strip()
+            result = subprocess.run(cmd,
+                                  check=True,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE,
+                                  text=True,
+                                  timeout=120)
+            return True, result.stdout.strip()
         except subprocess.CalledProcessError as e:
-            erro = e.stderr.strip() or f"Comando falhou com código {e.returncode}"
-            return False, erro
+            error_msg = e.stderr.strip() or f"Comando falhou com código {e.returncode}"
+            return False, error_msg
         except Exception as e:
             return False, str(e)
 
@@ -29,11 +29,11 @@ class VPNManager:
         """Obtém a versão mais recente disponível"""
         try:
             url = "https://repo.protonvpn.com/debian/dists/stable/main/binary-all/"
-            resposta = requests.get(url, timeout=10)
-            versoes = re.findall(r'protonvpn-stable-release_(\d+\.\d+\.\d+)_all\.deb', resposta.text)
-            if versoes:
-                mais_nova = max(versoes, key=lambda x: tuple(map(int, x.split('.'))))
-                return True, mais_nova
+            response = requests.get(url, timeout=10)
+            versions = re.findall(r'protonvpn-stable-release_(\d+\.\d+\.\d+)_all\.deb', response.text)
+            if versions:
+                latest = max(versions, key=lambda x: tuple(map(int, x.split('.'))))
+                return True, latest
             return False, "Versão não encontrada"
         except Exception as e:
             return False, str(e)
@@ -41,46 +41,46 @@ class VPNManager:
     @staticmethod
     def verificar_atualizacoes() -> Tuple[bool, str]:
         """Verifica se há atualizações disponíveis"""
-        sucesso, instalada = VPNManager._obter_versao_instalada()
-        if not sucesso:
-            return False, instalada
+        success, installed = VPNManager._obter_versao_instalada()
+        if not success:
+            return False, installed
 
-        sucesso, mais_nova = VPNManager._obter_versao_mais_recente()
-        if not sucesso:
-            return False, mais_nova
+        success, latest = VPNManager._obter_versao_mais_recente()
+        if not success:
+            return False, latest
 
-        if instalada == mais_nova:
-            return False, f"Você já tem a versão mais recente ({instalada})"
-        return True, f"Nova versão disponível: {mais_nova} (atual: {instalada})"
+        if installed == latest:
+            return False, f"Você já tem a versão mais recente ({installed})"
+        return True, f"Nova versão disponível: {latest} (atual: {installed})"
 
     @staticmethod
     def _obter_versao_instalada() -> Tuple[bool, str]:
         """Obtém a versão instalada"""
         cmd = ["apt-cache", "policy", "protonvpn-stable-release"]
-        sucesso, saida = VPNManager._executar_comando(cmd)
-        if not sucesso:
-            return False, saida
+        success, output = VPNManager._executar_comando(cmd)
+        if not success:
+            return False, output
 
-        versao = re.search(r"Instalada: (\d+\.\d+\.\d+)", saida)
-        if versao:
-            return True, versao.group(1)
+        version = re.search(r"Instalada: (\d+\.\d+\.\d+)", output)
+        if version:
+            return True, version.group(1)
         return False, "Versão não identificada"
 
     @staticmethod
     def verificar_instalacao() -> bool:
         """Verifica se o ProtonVPN está instalado"""
-        verificacoes = [
+        checks = [
             ["which", "protonvpn-cli"],
             ["which", "proton-vpn-gnome-desktop"],
             ["dpkg", "-l", "protonvpn-stable-release"]
         ]
-        return any(VPNManager._executar_comando(cmd)[0] for cmd in verificacoes)
+        return any(VPNManager._executar_comando(cmd)[0] for cmd in checks)
 
     @staticmethod
     def instalar() -> Tuple[bool, str]:
         """Instalação completa"""
         # 1. Configurar repositório
-        comandos_repo = [
+        repo_cmds = [
             ["sudo", "wget", "-O", "/usr/share/keyrings/protonvpn-archive-keyring.gpg",
              "https://repo.protonvpn.com/debian/public_key.asc"],
             ["sudo", "sh", "-c",
@@ -88,33 +88,33 @@ class VPNManager:
             ["sudo", "apt", "update"]
         ]
 
-        for cmd in comandos_repo:
-            sucesso, erro = VPNManager._executar_comando(cmd)
-            if not sucesso:
-                return False, f"Falha ao configurar repositório: {erro}"
+        for cmd in repo_cmds:
+            success, error = VPNManager._executar_comando(cmd)
+            if not success:
+                return False, f"Falha ao configurar repositório: {error}"
 
         # 2. Instalar cliente
-        clientes = ["proton-vpn-gnome-desktop", "protonvpn-cli"]
-        instalado = False
-        mensagem = ""
+        clients = ["proton-vpn-gnome-desktop", "protonvpn-cli"]
+        installed = False
+        message = ""
 
-        for cliente in clientes:
-            sucesso, erro = VPNManager._executar_comando(["sudo", "apt", "install", "-y", cliente])
-            if sucesso:
-                instalado = True
-                mensagem = f"Cliente {cliente} instalado com sucesso"
+        for client in clients:
+            success, error = VPNManager._executar_comando(["sudo", "apt", "install", "-y", client])
+            if success:
+                installed = True
+                message = f"Cliente {client} instalado com sucesso"
                 break
-            mensagem = erro
+            message = error
 
-        if not instalado:
-            return False, f"Falha ao instalar ambos clientes: {mensagem}"
+        if not installed:
+            return False, f"Falha ao instalar ambos clientes: {message}"
 
-        return True, mensagem
+        return True, message
 
     @staticmethod
     def desinstalar() -> Tuple[bool, str]:
         """Desinstalação completa"""
-        comandos = [
+        cmds = [
             ["sudo", "apt", "remove", "--purge", "-y", "proton-vpn-gnome-desktop", "protonvpn-cli"],
             ["sudo", "rm", "-f", "/etc/apt/sources.list.d/protonvpn-stable.list"],
             ["sudo", "rm", "-f", "/usr/share/keyrings/protonvpn-archive-keyring.gpg"],
@@ -122,53 +122,73 @@ class VPNManager:
             ["sudo", "rm", "-rf", os.path.expanduser("~/.config/protonvpn")]
         ]
 
-        erros = []
-        for cmd in comandos:
-            sucesso, erro = VPNManager._executar_comando(cmd)
-            if not sucesso and "não encontrado" not in erro.lower():
-                erros.append(erro)
+        errors = []
+        for cmd in cmds:
+            success, error = VPNManager._executar_comando(cmd)
+            if not success and "não encontrado" not in error.lower():
+                errors.append(error)
 
-        if erros:
-            return False, " | ".join(erros)
+        if errors:
+            return False, " | ".join(errors)
         return True, "Desinstalação concluída com sucesso"
 
     @staticmethod
+    def login(username: str, password: str) -> Tuple[bool, str]:
+        """Configura login de forma robusta"""
+        try:
+            # Método 1: Usando arquivo temporário seguro
+            temp_auth = "/tmp/protonvpn_auth.tmp"
+            with open(temp_auth, "w") as f:
+                f.write(f"{username}\n{password}\n")
+            os.chmod(temp_auth, 0o600)
+
+            cmd = ["sudo", "protonvpn-cli", "login", "--username-file", temp_auth]
+            success, output = VPNManager._executar_comando(cmd)
+
+            # Limpeza imediata
+            os.remove(temp_auth)
+
+            if success:
+                return True, "Login realizado com sucesso"
+
+            # Método 2: Fallback para input interativo
+            if "DeprecationWarning" in output:
+                cmd = f"printf '{username}\\n{password}\\n' | sudo protonvpn-cli login"
+                return VPNManager._executar_comando(["bash", "-c", cmd])
+
+            return False, output.split("DeprecationWarning")[0].strip()
+
+        except Exception as e:
+            if 'temp_auth' in locals() and os.path.exists(temp_auth):
+                os.remove(temp_auth)
+            return False, str(e)
+
+    @staticmethod
     def conectar() -> Tuple[bool, str]:
-        """Conectar à VPN"""
-        clientes = ["protonvpn-cli", "proton-vpn-gnome-desktop"]
-        for cliente in clientes:
-            sucesso, _ = VPNManager._executar_comando(["which", cliente])
-            if sucesso:
-                return VPNManager._executar_comando(["sudo", cliente, "connect", "--fastest"])
+        """Conecta à VPN"""
+        clients = ["protonvpn-cli", "proton-vpn-gnome-desktop"]
+        for client in clients:
+            success, _ = VPNManager._executar_comando(["which", client])
+            if success:
+                return VPNManager._executar_comando(["sudo", client, "connect", "--fastest"])
         return False, "Nenhum cliente ProtonVPN instalado"
 
     @staticmethod
     def desconectar() -> Tuple[bool, str]:
-        """Desconectar da VPN"""
-        clientes = ["protonvpn-cli", "proton-vpn-gnome-desktop"]
-        for cliente in clientes:
-            sucesso, _ = VPNManager._executar_comando(["which", cliente])
-            if sucesso:
-                return VPNManager._executar_comando(["sudo", cliente, "disconnect"])
+        """Desconecta da VPN"""
+        clients = ["protonvpn-cli", "proton-vpn-gnome-desktop"]
+        for client in clients:
+            success, _ = VPNManager._executar_comando(["which", client])
+            if success:
+                return VPNManager._executar_comando(["sudo", client, "disconnect"])
         return False, "Nenhum cliente ProtonVPN instalado"
 
     @staticmethod
     def status() -> Tuple[bool, str]:
-        """Verificar status da conexão"""
-        clientes = ["protonvpn-cli", "proton-vpn-gnome-desktop"]
-        for cliente in clientes:
-            sucesso, _ = VPNManager._executar_comando(["which", cliente])
-            if sucesso:
-                return VPNManager._executar_comando([cliente, "status"])
-        return False, "Nenhum cliente ProtonVPN instalado"
-
-    @staticmethod
-    def login(username: str, password: str) -> Tuple[bool, str]:
-        """Configurar credenciais de login"""
-        clientes = ["protonvpn-cli", "proton-vpn-gnome-desktop"]
-        for cliente in clientes:
-            sucesso, _ = VPNManager._executar_comando(["which", cliente])
-            if sucesso:
-                cmd = f"printf '{username}\\n{password}\\n' | sudo {cliente} login"
-                return VPNManager._executar_comando(["bash", "-c", cmd])
+        """Verifica status da conexão"""
+        clients = ["protonvpn-cli", "proton-vpn-gnome-desktop"]
+        for client in clients:
+            success, _ = VPNManager._executar_comando(["which", client])
+            if success:
+                return VPNManager._executar_comando([client, "status"])
         return False, "Nenhum cliente ProtonVPN instalado"
