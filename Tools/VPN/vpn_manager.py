@@ -1,8 +1,9 @@
 import subprocess
 import os
-import requests
+import sys
 from typing import Tuple
 import logging
+import requests
 
 class VPNManager:
     @staticmethod
@@ -23,96 +24,78 @@ class VPNManager:
             return False, str(e)
 
     @staticmethod
-    def _install_official_package() -> Tuple[bool, str]:
-        """Instala seguindo o método oficial da ProtonVPN"""
-        try:
-            # 1. Baixar pacote .deb
-            deb_url = "https://repo.protonvpn.com/debian/dists/stable/main/binary-all/protonvpn-stable-release_1.0.8_all.deb"
-            deb_file = "protonvpn-stable-release_1.0.8_all.deb"
-
-            if not os.path.exists(deb_file):
-                print("Baixando pacote oficial...")
-                response = requests.get(deb_url, timeout=30)
-                with open(deb_file, 'wb') as f:
-                    f.write(response.content)
-
-            # 2. Instalar seguindo os passos oficiais
-            commands = [
-                ["sudo", "dpkg", "-i", deb_file],
-                ["sudo", "apt", "update", "-y"],
-                ["sudo", "apt", "install", "-y", "proton-vpn-gnome-desktop"],
-                ["sudo", "apt", "install", "-y", "libayatana-appindicator3-1",
-                 "gir1.2-ayatanaappindicator3-0.1", "gnome-shell-extension-appindicator"]
-            ]
-
-            for cmd in commands:
-                success, error = VPNManager._run_command(cmd)
-                if not success:
-                    return False, error
-
-            return True, "Instalação oficial concluída com sucesso"
-
-        except Exception as e:
-            return False, str(e)
-
-    @staticmethod
     def check_installation() -> bool:
-        """Verifica se o ProtonVPN está instalado corretamente"""
+        """Verifica se o ProtonVPN CLI está instalado"""
         checks = [
             ["which", "protonvpn-cli"],
-            ["protonvpn-cli", "--version"],
-            ["dpkg", "-l", "proton-vpn-gnome-desktop"]
+            ["protonvpn-cli", "--version"]
         ]
         return all(VPNManager._run_command(cmd)[0] for cmd in checks)
 
     @staticmethod
     def install() -> Tuple[bool, str]:
-        """Fluxo completo de instalação"""
-        # 1. Remover instalações anteriores
-        VPNManager._remove_old_installation()
+        """Instalação via pip + configuração inicial"""
+        try:
+            # 1. Instalar dependências
+            deps_cmd = [
+                "sudo", "apt", "install", "-y",
+                "openvpn", "dialog", "python3-pip",
+                "python3-setuptools", "wireguard-tools"
+            ]
+            success, error = VPNManager._run_command(deps_cmd)
+            if not success:
+                return False, f"Dependências falharam: {error}"
 
-        # 2. Tentar instalação oficial
-        return VPNManager._install_official_package()
+            # 2. Instalar via pip
+            pip_cmd = ["sudo", "pip3", "install", "--upgrade", "protonvpn-cli"]
+            success, error = VPNManager._run_command(pip_cmd)
+            if not success:
+                return False, f"Instalação pip falhou: {error}"
+
+            # 3. Configurar CLI
+            if not os.path.exists("/usr/local/bin/protonvpn-cli"):
+                return False, "Binário não encontrado após instalação"
+
+            return True, "ProtonVPN CLI instalado com sucesso"
+
+        except Exception as e:
+            return False, f"Erro crítico: {str(e)}"
 
     @staticmethod
-    def _remove_old_installation() -> Tuple[bool, str]:
-        """Remove instalações antigas completamente"""
+    def init_config(username: str, password: str) -> Tuple[bool, str]:
+        """Configuração inicial do ProtonVPN"""
         try:
-            commands = [
-                ["sudo", "apt", "remove", "--purge", "-y", "proton-vpn-gnome-desktop"],
-                ["sudo", "apt", "autoremove", "-y"],
-                ["sudo", "rm", "-f", "/etc/apt/sources.list.d/protonvpn-stable.list"],
-                ["sudo", "rm", "-f", "/usr/share/keyrings/protonvpn-archive-keyring.gpg"],
-                ["sudo", "find", ".", "-name", "protonvpn-stable-release_*.deb", "-delete"]
-            ]
-
-            for cmd in commands:
-                VPNManager._run_command(cmd)
-
-            return True, "Remoção concluída"
+            cmd = f"printf '{username}\\n{password}\\n' | sudo protonvpn-cli --init"
+            success, error = VPNManager._run_command(["bash", "-c", cmd])
+            return success, error
         except Exception as e:
             return False, str(e)
 
     @staticmethod
     def connect() -> Tuple[bool, str]:
         """Conecta à VPN"""
-        return VPNManager._run_command(["protonvpn-cli", "connect", "--fastest"])
+        return VPNManager._run_command(["sudo", "protonvpn-cli", "connect", "--fastest"])
 
     @staticmethod
     def disconnect() -> Tuple[bool, str]:
         """Desconecta da VPN"""
-        return VPNManager._run_command(["protonvpn-cli", "disconnect"])
+        return VPNManager._run_command(["sudo", "protonvpn-cli", "disconnect"])
 
     @staticmethod
     def status() -> Tuple[bool, str]:
         """Verifica status da VPN"""
-        return VPNManager._run_command(["protonvpn-cli", "status"])
+        return VPNManager._run_command(["sudo", "protonvpn-cli", "status"])
 
     @staticmethod
-    def login(username: str, password: str) -> Tuple[bool, str]:
-        """Realiza login na VPN"""
-        return VPNManager._run_command([
-            "protonvpn-cli", "login",
-            "--username", username,
-            "--password", password
-        ])
+    def cleanup():
+        """Remove arquivos temporários"""
+        try:
+            cmds = [
+                ["sudo", "pip3", "uninstall", "-y", "protonvpn-cli"],
+                ["sudo", "rm", "-f", "/usr/local/bin/protonvpn-cli"],
+                ["sudo", "rm", "-rf", "~/.protonvpn"]
+            ]
+            for cmd in cmds:
+                VPNManager._run_command(cmd)
+        except Exception:
+            pass
