@@ -283,32 +283,47 @@ def vpn_menu(user_language: str) -> None:
         return (f"{Fore.GREEN}✔ CONECTADO" if "Connected" in status_msg
                 else f"{Fore.RED}✖ DESCONECTADO")
 
+    def mostrar_progresso():
+        """Exibe uma animação de progresso"""
+        for i in range(3):
+            print(".", end='', flush=True)
+            time.sleep(0.5)
+        print()
+
     def configurar_login() -> bool:
-        """Fluxo robusto de configuração de login"""
+        """Fluxo de login completo"""
         tentativas = 3
         while tentativas > 0:
             clear_console()
             print(f"\n{Fore.YELLOW}▶ Configuração de Login ({tentativas} tentativas restantes)")
+            print(f"{Fore.CYAN}▶ Certifique-se de ter uma conexão com a internet estável\n")
 
-            username = input(f"{Fore.CYAN}• Usuário ProtonVPN: ")
-            password = input(f"{Fore.CYAN}• Senha ProtonVPN: ")
-
-            if not username or not password:
-                print(f"{Fore.RED}✖ Usuário e senha são obrigatórios")
+            username = input(f"{Fore.CYAN}• Usuário ProtonVPN: ").strip()
+            if not username:
+                print(f"{Fore.RED}✖ O usuário não pode estar vazio")
                 tentativas -= 1
-                input(lang['press_enter'])
+                time.sleep(1)
                 continue
 
-            print(f"\n{Fore.YELLOW}▶ Verificando credenciais...")
-            success, message = VPNManager.login(username, password)
+            password = input(f"{Fore.CYAN}• Senha ProtonVPN: ").strip()
+            if not password:
+                print(f"{Fore.RED}✖ A senha não pode estar vazia")
+                tentativas -= 1
+                time.sleep(1)
+                continue
 
+            print(f"\n{Fore.YELLOW}▶ Verificando credenciais", end='')
+            mostrar_progresso()
+
+            success, message = VPNManager.login(username, password)
             if success:
-                print(f"{Fore.GREEN}✓ Login realizado com sucesso!")
+                print(f"{Fore.GREEN}✓ {message}")
                 return True
             else:
-                print(f"{Fore.RED}✖ Falha no login: {message}")
+                print(f"{Fore.RED}✖ {message}")
                 tentativas -= 1
-                input(lang['press_enter'])
+                if tentativas > 0:
+                    input(lang['press_enter'])
 
         print(f"{Fore.RED}✖ Número máximo de tentativas excedido")
         return False
