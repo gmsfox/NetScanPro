@@ -1,14 +1,13 @@
 import subprocess
 import os
 import logging
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 import re
 import requests
-from pathlib import Path
 import time
 
 class VPNManager:
-    # Configuração de timeouts
+    # Timeout configurations
     DEFAULT_TIMEOUT = 120
     STATUS_TIMEOUT = 30
     CONNECT_TIMEOUT = 180
@@ -16,8 +15,8 @@ class VPNManager:
     INSTALL_TIMEOUT = 300
 
     @staticmethod
-    def _executar_comando(cmd: list, timeout: Optional[int] = None) -> Tuple[bool, str]:
-        """Executa comandos com tratamento robusto de erros"""
+    def _executar_comando(cmd: List[str], timeout: Optional[int] = None) -> Tuple[bool, str]:
+        """Execute commands with robust error handling"""
         timeout = timeout or VPNManager.DEFAULT_TIMEOUT
         try:
             result = subprocess.run(cmd,
@@ -28,16 +27,59 @@ class VPNManager:
                                   timeout=timeout)
             return True, result.stdout.strip()
         except subprocess.TimeoutExpired:
-            return False, f"O comando excedeu o tempo limite ({timeout}s)"
+            return False, f"Command timed out ({timeout}s)"
         except subprocess.CalledProcessError as e:
-            error_msg = e.stderr.strip() or f"Comando falhou com código {e.returncode}"
+            error_msg = e.stderr.strip() or f"Command failed with code {e.returncode}"
             return False, error_msg
         except Exception as e:
             return False, str(e)
 
     @staticmethod
+    def _encontrar_executavel() -> Optional[str]:
+        """Find ProtonVPN CLI executable path"""
+        paths_to_check = [
+            "/usr/bin/protonvpn-cli",
+            "/usr/local/bin/protonvpn-cli",
+            "/opt/protonvpn/protonvpn-cli",
+            os.path.expanduser("~/.local/bin/protonvpn-cli")
+        ]
+
+        for path in paths_to_check:
+            if os.path.exists(path) and os.access(path, os.X_OK):
+                return path
+
+        # Try finding via which
+        success, output = VPNManager._executar_comando(["which", "protonvpn-cli"])
+        if success:
+            return output.strip()
+
+        return None
+
+    @staticmethod
+    def verificar_instalacao() -> bool:
+        """Check if ProtonVPN is properly installed"""
+        return VPNManager._encontrar_executavel() is not None
+
+    @staticmethod
+    def _obter_versao_instalada() -> Tuple[bool, str]:
+        """Get installed version"""
+        executable = VPNManager._encontrar_executavel()
+        if not executable:
+            return False, "ProtonVPN CLI not found"
+
+        cmd = [executable, "--version"]
+        success, output = VPNManager._executar_comando(cmd)
+        if not success:
+            return False, output
+
+        version = re.search(r"ProtonVPN-CLI v?(\d+\.\d+\.\d+)", output)
+        if version:
+            return True, version.group(1)
+        return False, "Version not identified"
+
+    @staticmethod
     def _obter_versao_mais_recente() -> Tuple[bool, str]:
-        """Obtém a versão mais recente disponível"""
+        """Get latest available version"""
         try:
             url = "https://repo.protonvpn.com/debian/dists/stable/main/binary-all/"
             response = requests.get(url, timeout=15)
@@ -46,13 +88,13 @@ class VPNManager:
             if versions:
                 latest = max(versions, key=lambda x: tuple(map(int, x.split('.'))))
                 return True, latest
-            return False, "Versão não encontrada"
+            return False, "Version not found"
         except Exception as e:
             return False, str(e)
 
     @staticmethod
     def verificar_atualizacoes() -> Tuple[bool, str]:
-        """Verifica se há atualizações disponíveis"""
+        """Check for available updates"""
         success, installed = VPNManager._obter_versao_instalada()
         if not success:
             return False, installed
@@ -62,72 +104,59 @@ class VPNManager:
             return False, latest
 
         if installed == latest:
-            return False, f"Você já tem a versão mais recente ({installed})"
-        return True, f"Nova versão disponível: {latest} (atual: {installed})"
-
-    @staticmethod
-    def _obter_versao_instalada() -> Tuple[bool, str]:
-        """Obtém a versão instalada"""
-        cmd = ["apt-cache", "policy", "protonvpn-stable-release"]
-        success, output = VPNManager._executar_comando(cmd)
-        if not success:
-            return False, output
-
-        version = re.search(r"Instalada: (\d+\.\d+\.\d+)", output)
-        if version:
-            return True, version.group(1)
-        return False, "Versão não identificada"
-
-    @staticmethod
-    def verificar_instalacao() -> bool:
-        """Verifica se o ProtonVPN está instalado"""
-        checks = [
-            ["which", "protonvpn-cli"],
-            ["dpkg", "-l", "protonvpn-stable-release"]
-        ]
-        return any(VPNManager._executar_comando(cmd)[0] for cmd in checks)
+            return False, f"You already have the latest version ({installed})"
+        return True, f"New version available: {latest} (current: {installed})"
 
     @staticmethod
     def instalar() -> Tuple[bool, str]:
-        """Instalação completa com tratamento aprimorado"""
+        """Complete installation with improved checks"""
         try:
-            # 1. Configurar repositório
+            # Check dependencies
+            dependencies = ["wget", "apt-transport-https", "gnupg"]
+            for dep in dependencies:
+                success, _ = VPNManager._executar_comando(["which", dep])
+                if not success:
+                    install_cmd = ["sudo", "apt", "install", "-y", dep]
+                    success, error = VPNManager._executar_comando(install_cmd)
+                    if not success:
+                        return False, f"Dependency installation failed: {error}"
+
+            # Configure repository
             repo_cmds = [
-                ["sudo", "wget", "-O", "/usr/share/keyrings/protonvpn-archive-keyring.gpg",
+                ["sudo", "wget", "-qO", "/usr/share/keyrings/protonvpn-archive-keyring.gpg",
                  "https://repo.protonvpn.com/debian/public_key.asc"],
+                ["sudo", "chmod", "644", "/usr/share/keyrings/protonvpn-archive-keyring.gpg"],
                 ["sudo", "sh", "-c",
                  "echo 'deb [arch=all signed-by=/usr/share/keyrings/protonvpn-archive-keyring.gpg] https://repo.protonvpn.com/debian stable main' > /etc/apt/sources.list.d/protonvpn-stable.list"],
-                ["sudo", "apt", "update", "-y"]
+                ["sudo", "apt", "update"]
             ]
 
             for cmd in repo_cmds:
-                success, error = VPNManager._executar_comando(cmd, timeout=VPNManager.INSTALL_TIMEOUT)
+                success, error = VPNManager._executar_comando(cmd)
                 if not success:
-                    return False, f"Falha na configuração: {error}"
+                    return False, f"Configuration failed: {error}"
 
-            # 2. Instalar cliente
-            clients = ["protonvpn-cli", "proton-vpn-gnome-desktop"]
-            for client in clients:
-                success, error = VPNManager._executar_comando(
-                    ["sudo", "apt", "install", "-y", client],
-                    timeout=VPNManager.INSTALL_TIMEOUT
-                )
-                if success:
-                    # Verificar se a instalação foi realmente bem-sucedida
-                    if VPNManager.verificar_instalacao():
-                        return True, f"{client} instalado com sucesso"
-                    return False, f"{client} aparentemente instalado mas verificação falhou"
+            # Install client
+            install_cmd = ["sudo", "apt", "install", "-y", "protonvpn-cli"]
+            success, output = VPNManager._executar_comando(install_cmd, timeout=VPNManager.INSTALL_TIMEOUT)
 
-            return False, "Falha ao instalar ambos clientes"
+            if not success:
+                return False, f"Installation failed: {output}"
+
+            # Verify installation
+            if VPNManager.verificar_instalacao():
+                return True, "ProtonVPN CLI installed successfully"
+            return False, "Installation appeared successful but executable not found"
+
         except Exception as e:
-            return False, str(e)
+            return False, f"Installation error: {str(e)}"
 
     @staticmethod
     def desinstalar() -> Tuple[bool, str]:
-        """Desinstalação completa"""
+        """Complete uninstallation"""
         try:
             cmds = [
-                ["sudo", "apt", "remove", "--purge", "-y", "proton-vpn-gnome-desktop", "protonvpn-cli"],
+                ["sudo", "apt", "remove", "--purge", "-y", "protonvpn-cli"],
                 ["sudo", "rm", "-f", "/etc/apt/sources.list.d/protonvpn-stable.list"],
                 ["sudo", "rm", "-f", "/usr/share/keyrings/protonvpn-archive-keyring.gpg"],
                 ["sudo", "apt", "autoremove", "-y"],
@@ -135,154 +164,141 @@ class VPNManager:
             ]
 
             for cmd in cmds:
-                success, error = VPNManager._executar_comando(cmd, timeout=VPNManager.DEFAULT_TIMEOUT)
+                success, error = VPNManager._executar_comando(cmd)
                 if not success:
-                    logging.warning(f"Comando falhou durante desinstalação: {error}")
+                    logging.warning(f"Command failed during uninstallation: {error}")
 
-            # Verificar se foi realmente desinstalado
+            # Verify uninstallation
             if not VPNManager.verificar_instalacao():
-                return True, "Desinstalação concluída"
-            return False, "Desinstalação aparentemente concluída mas vestígios permanecem"
+                return True, "Uninstallation completed"
+            return False, "Uninstallation appeared successful but traces remain"
         except Exception as e:
             return False, str(e)
 
     @staticmethod
     def login(username: str, password: str) -> Tuple[bool, str]:
-        """Método de login aprimorado"""
+        """Improved login method"""
+        executable = VPNManager._encontrar_executavel()
+        if not executable:
+            return False, "ProtonVPN CLI not found"
+
         try:
-            # Método 1: Arquivo temporário
+            # Method 1: Temporary file
             temp_auth = "/tmp/protonvpn_auth.tmp"
             try:
                 with open(temp_auth, "w") as f:
                     f.write(f"{username}\n{password}\n")
                 os.chmod(temp_auth, 0o600)
 
-                cmd = ["sudo", "protonvpn-cli", "login", "--username-file", temp_auth]
+                cmd = ["sudo", executable, "login", "--username-file", temp_auth]
                 success, output = VPNManager._executar_comando(cmd, timeout=VPNManager.LOGIN_TIMEOUT)
 
                 if success:
-                    return True, "Login realizado com sucesso"
+                    return True, "Login successful"
 
-                # Método 2: Fallback interativo
-                cmd = f"printf '{username}\\n{password}\\n' | sudo protonvpn-cli login"
+                # Method 2: Interactive fallback
+                cmd = f"printf '{username}\\n{password}\\n' | sudo {executable} login"
                 success, output = VPNManager._executar_comando(
                     ["bash", "-c", cmd],
                     timeout=VPNManager.LOGIN_TIMEOUT
                 )
                 if success:
-                    return True, "Login realizado (método alternativo)"
+                    return True, "Login successful (alternative method)"
 
-                # Tratamento de erros específicos
+                # Error handling
                 if "Invalid credentials" in output:
-                    return False, "Credenciais inválidas"
+                    return False, "Invalid credentials"
                 elif "timed out" in output:
-                    return False, "Tempo limite excedido - verifique sua conexão"
+                    return False, "Timeout - check your connection"
                 elif "No internet" in output:
-                    return False, "Sem conexão com a internet"
+                    return False, "No internet connection"
 
                 return False, output.split("DeprecationWarning")[0].strip()
             finally:
                 if os.path.exists(temp_auth):
                     os.remove(temp_auth)
         except Exception as e:
-            return False, f"Erro inesperado durante login: {str(e)}"
+            return False, f"Unexpected login error: {str(e)}"
 
     @staticmethod
     def conectar() -> Tuple[bool, str]:
-        """Conectar à VPN com tratamento melhorado"""
-        # Verificar status primeiro
+        """Connect to VPN with improved handling"""
+        executable = VPNManager._encontrar_executavel()
+        if not executable:
+            return False, "ProtonVPN CLI not found"
+
+        # Check status first
         status_success, status_msg = VPNManager.status()
-        if status_success and "Conectado" in status_msg:
-            return False, "Já conectado"
+        if status_success and "Connected" in status_msg:
+            return False, "Already connected"
 
-        clients = ["protonvpn-cli", "proton-vpn-gnome-desktop"]
-        for client in clients:
-            # Verificar qual cliente está disponível
-            which_success, _ = VPNManager._executar_comando(["which", client])
-            if not which_success:
-                continue
+        cmd = ["sudo", executable, "connect", "--fastest"]
+        success, output = VPNManager._executar_comando(cmd, timeout=VPNManager.CONNECT_TIMEOUT)
 
-            # Comando específico para cada cliente
-            if client == "protonvpn-cli":
-                cmd = ["sudo", "protonvpn-cli", "connect", "--fastest"]
-            else:
-                cmd = ["proton-vpn-gnome-desktop", "--connect"]
+        if success:
+            # Verify connection
+            time.sleep(3)
+            status_success, status_msg = VPNManager.status()
+            if status_success and "Connected" in status_msg:
+                return True, "Connection established"
+            return False, "Appeared successful but status doesn't confirm"
 
-            success, output = VPNManager._executar_comando(cmd, timeout=VPNManager.CONNECT_TIMEOUT)
+        # Error handling
+        if "No internet connection" in output:
+            return False, "No internet connection"
+        elif "API request failed" in output:
+            return False, "ProtonVPN server issues"
+        elif "Another connection is active" in output:
+            return False, "Another connection is active"
 
-            if success:
-                # Verificar se realmente conectou
-                time.sleep(3)  # Esperar conexão estabilizar
-                status_success, status_msg = VPNManager.status()
-                if status_success and "Conectado" in status_msg:
-                    return True, "Conexão estabelecida com sucesso"
-                return False, "Conexão aparentemente bem-sucedida mas status não confirma"
-
-            # Tratamento de erros específicos
-            if "No internet connection" in output:
-                return False, "Sem conexão com a internet"
-            elif "API request failed" in output:
-                return False, "Problema nos servidores ProtonVPN"
-            elif "Another connection is active" in output:
-                return False, "Já existe uma conexão ativa"
-
-        return False, "Falha ao conectar em todos os clientes"
+        return False, output
 
     @staticmethod
     def desconectar() -> Tuple[bool, str]:
-        """Desconectar da VPN"""
-        # Verificar status primeiro
+        """Disconnect from VPN"""
+        executable = VPNManager._encontrar_executavel()
+        if not executable:
+            return False, "ProtonVPN CLI not found"
+
+        # Check status first
         status_success, status_msg = VPNManager.status()
-        if status_success and "Desconectado" in status_msg:
-            return False, "Já desconectado"
+        if status_success and "Disconnected" in status_msg:
+            return False, "Already disconnected"
 
-        clients = ["protonvpn-cli", "proton-vpn-gnome-desktop"]
-        for client in clients:
-            which_success, _ = VPNManager._executar_comando(["which", client])
-            if which_success:
-                success, output = VPNManager._executar_comando(
-                    ["sudo", client, "disconnect"],
-                    timeout=VPNManager.DEFAULT_TIMEOUT
-                )
-                if success:
-                    # Verificar se realmente desconectou
-                    time.sleep(2)
-                    status_success, status_msg = VPNManager.status()
-                    if status_success and "Desconectado" in status_msg:
-                        return True, "Desconectado com sucesso"
-                    return False, "Desconexão aparentemente bem-sucedida mas status não confirma"
+        cmd = ["sudo", executable, "disconnect"]
+        success, output = VPNManager._executar_comando(cmd)
 
-        return False, "Nenhum cliente ProtonVPN instalado ou respondendo"
+        if success:
+            # Verify disconnection
+            time.sleep(2)
+            status_success, status_msg = VPNManager.status()
+            if status_success and "Disconnected" in status_msg:
+                return True, "Disconnected successfully"
+            return False, "Appeared successful but status doesn't confirm"
+
+        return False, output
 
     @staticmethod
     def status() -> Tuple[bool, str]:
-        """Verificar status da conexão com tentativas"""
-        clients = ["protonvpn-cli", "proton-vpn-gnome-desktop"]
+        """Check connection status with retries"""
+        executable = VPNManager._encontrar_executavel()
+        if not executable:
+            return False, "ProtonVPN CLI not found"
 
-        for client in clients:
-            # Verificar qual cliente está disponível
-            which_success, _ = VPNManager._executar_comando(["which", client])
-            if not which_success:
-                continue
+        for attempt in range(3):
+            cmd = [executable, "status"]
+            success, output = VPNManager._executar_comando(cmd, timeout=VPNManager.STATUS_TIMEOUT)
 
-            # Tentar obter status (3 tentativas)
-            for attempt in range(3):
-                success, output = VPNManager._executar_comando(
-                    [client, "status"],
-                    timeout=VPNManager.STATUS_TIMEOUT
-                )
+            if success:
+                output_lower = output.lower()
+                if "connected" in output_lower:
+                    return True, "✅ Connected"
+                elif "disconnected" in output_lower:
+                    return True, "❌ Disconnected"
+                elif "connecting" in output_lower:
+                    return True, "🔄 Connecting..."
+                return True, output
 
-                if success:
-                    # Processar saída para formato mais limpo
-                    output_lower = output.lower()
-                    if "connected" in output_lower or "conectado" in output_lower:
-                        return True, "✅ Conectado"
-                    elif "disconnected" in output_lower or "desconectado" in output_lower:
-                        return True, "❌ Desconectado"
-                    elif "connecting" in output_lower:
-                        return True, "🔄 Conectando..."
-                    return True, output
+            time.sleep(2)
 
-                time.sleep(2)  # Espera entre tentativas
-
-        return False, "Nenhum cliente ProtonVPN respondendo corretamente"
+        return False, "Failed to check status"
