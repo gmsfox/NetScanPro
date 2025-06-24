@@ -282,7 +282,7 @@ def vpn_menu(user_language: str) -> None:
 
         success, status_msg = VPNManager.status()
         if not success:
-            return f"{Fore.RED}✖ {status_msg}"
+            return f"{Fore.YELLOW}→ {status_msg}"
 
         if "Connected" in status_msg:
             return f"{Fore.GREEN}✔ {lang['connected']}"
@@ -307,22 +307,36 @@ def vpn_menu(user_language: str) -> None:
         escolha = input(f"\n{Fore.CYAN}▶ Selecione uma opção: ").strip()
 
         if escolha == "1":  # Conectar
-            if not VPNManager.check_installation()[0]:
+            installed, _ = VPNManager.check_installation()
+            if not installed:
                 print(f"{Fore.RED}✖ {lang['not_installed']}")
                 if input(f"Deseja instalar agora? (s/n): ").lower() == 's':
-                    VPNManager.install()
+                    print(f"{Fore.YELLOW}▶ {lang['installing']}")
+                    success, msg = VPNManager.install()
+                    print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+                    if success:
+                        print(f"{Fore.YELLOW}▶ {lang['connecting']}")
+                        success, msg = VPNManager.connect()
+                        print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+                input(lang['press_enter'])
                 continue
 
             print(f"{Fore.YELLOW}▶ {lang['connecting']}")
             success, msg = VPNManager.connect()
             print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
-            time.sleep(2)
+            input(lang['press_enter'])
 
         elif escolha == "2":  # Desconectar
+            installed, _ = VPNManager.check_installation()
+            if not installed:
+                print(f"{Fore.RED}✖ {lang['not_installed']}")
+                input(lang['press_enter'])
+                continue
+
             print(f"{Fore.YELLOW}▶ {lang['disconnecting']}")
             success, msg = VPNManager.disconnect()
             print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
-            time.sleep(2)
+            input(lang['press_enter'])
 
         elif escolha == "3":  # Status
             clear_console()
@@ -335,18 +349,38 @@ def vpn_menu(user_language: str) -> None:
             input(lang['press_enter'])
 
         elif escolha == "4":  # Instalar
+            installed, _ = VPNManager.check_installation()
+            if installed:
+                print(f"{Fore.YELLOW}▶ ProtonVPN já está instalado")
+                if input("Deseja reinstalar? (s/n): ").lower() != 's':
+                    continue
+
             print(f"{Fore.YELLOW}▶ {lang['installing']}")
             success, msg = VPNManager.install()
             print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
             input(lang['press_enter'])
 
         elif escolha == "5":  # Desinstalar
-            print(f"{Fore.YELLOW}▶ Desinstalando ProtonVPN...")
-            success, msg = VPNManager.uninstall()
-            print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+            installed, _ = VPNManager.check_installation()
+            if not installed:
+                print(f"{Fore.RED}✖ {lang['not_installed']}")
+                input(lang['press_enter'])
+                continue
+
+            confirm = input("Tem certeza que deseja desinstalar o ProtonVPN? (s/n): ").lower()
+            if confirm == 's':
+                print(f"{Fore.YELLOW}▶ Desinstalando ProtonVPN...")
+                success, msg = VPNManager.uninstall()
+                print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
             input(lang['press_enter'])
 
         elif escolha == "6":  # Verificar atualizações
+            installed, _ = VPNManager.check_installation()
+            if not installed:
+                print(f"{Fore.RED}✖ {lang['not_installed']}")
+                input(lang['press_enter'])
+                continue
+
             print(f"{Fore.YELLOW}▶ Verificando atualizações...")
             success, msg = VPNManager.check_updates()
             print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")

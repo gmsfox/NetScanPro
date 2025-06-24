@@ -32,12 +32,14 @@ class VPNManager:
             return True, result.stdout.strip()
         except subprocess.CalledProcessError as e:
             return False, e.stderr.strip() if e.stderr else str(e)
+        except FileNotFoundError:
+            return False, "Comando não encontrado. Verifique se o programa está instalado."
 
     @staticmethod
     def _create_vpn_dir() -> Tuple[bool, str]:
         """Cria o diretório PROTONVPN se não existir."""
         try:
-            VPNManager.VPN_DIR.mkdir(exist_ok=True)
+            VPNManager.VPN_DIR.mkdir(exist_ok=True, parents=True)
             return True, "Diretório PROTONVPN criado/verificado"
         except Exception as e:
             return False, f"Erro ao criar diretório: {str(e)}"
@@ -53,7 +55,7 @@ class VPNManager:
                 f.write(response.content)
 
             return True, f"Arquivo baixado: {dest}"
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             return False, f"Falha no download: {str(e)}"
 
     @staticmethod
@@ -184,11 +186,24 @@ class VPNManager:
                         check=False
                     )
 
+        # 3. Remover diretório de configuração do usuário
+        home_dir = Path.home()
+        protonvpn_config = home_dir / ".config/protonvpn"
+        if protonvpn_config.exists():
+            try:
+                import shutil
+                shutil.rmtree(protonvpn_config)
+            except Exception:
+                pass
+
         return True, "ProtonVPN desinstalado completamente"
 
     @staticmethod
     def connect() -> Tuple[bool, str]:
         """Conecta à VPN usando o servidor mais rápido."""
+        installed, _ = VPNManager.check_installation()
+        if not installed:
+            return False, "ProtonVPN não está instalado"
         return VPNManager._run_command(
             ["sudo", "protonvpn-cli", "connect", "--fastest"]
         )
@@ -196,6 +211,9 @@ class VPNManager:
     @staticmethod
     def disconnect() -> Tuple[bool, str]:
         """Desconecta da VPN."""
+        installed, _ = VPNManager.check_installation()
+        if not installed:
+            return False, "ProtonVPN não está instalado"
         return VPNManager._run_command(
             ["sudo", "protonvpn-cli", "disconnect"]
         )
@@ -203,11 +221,18 @@ class VPNManager:
     @staticmethod
     def status() -> Tuple[bool, str]:
         """Verifica o status da conexão VPN."""
-        return VPNManager._run_command(["protonvpn-cli", "status"])
+        installed, _ = VPNManager.check_installation()
+        if not installed:
+            return False, "ProtonVPN não está instalado"
+        return VPNManager._run_command(["protonvpn-cli", "status"], check=False)
 
     @staticmethod
     def check_updates() -> Tuple[bool, str]:
         """Verifica se há atualizações disponíveis."""
+        installed, _ = VPNManager.check_installation()
+        if not installed:
+            return False, "ProtonVPN não está instalado"
+
         commands = [
             ["sudo", "apt", "update"],
             ["apt", "list", "--upgradable"]
@@ -226,3 +251,14 @@ class VPNManager:
         if "protonvpn" in msg.lower():
             return True, "Atualizações disponíveis para o ProtonVPN"
         return True, "O ProtonVPN está atualizado"
+
+    @staticmethod
+    def login(username: str, password: str) -> Tuple[bool, str]:
+        """Configura o login do ProtonVPN."""
+        installed, _ = VPNManager.check_installation()
+        if not installed:
+            return False, "ProtonVPN não está instalado"
+
+        return VPNManager._run_command(
+            ["sudo", "protonvpn-cli", "login", username, password]
+        )
