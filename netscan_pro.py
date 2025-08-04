@@ -299,7 +299,7 @@ def vpn_menu(user_language: str) -> None:
         print(f"║ {Fore.CYAN}2. {lang['disconnect'].ljust(38)}{Fore.YELLOW}║")
         print(f"║ {Fore.CYAN}3. {lang['status'].ljust(38)}{Fore.YELLOW}║")
         print(f"║ {Fore.CYAN}4. {lang['install'].ljust(38)}{Fore.YELLOW}║")
-        print(f"║ {Fore.CYAN}5. {lang['desinstall'].ljust(38)}{Fore.YELLOW}║")
+        print(f"║ {Fore.CYAN}5. {lang['uninstall'].ljust(38)}{Fore.YELLOW}║")
         print(f"║ {Fore.CYAN}6. {lang['check_updates'].ljust(38)}{Fore.YELLOW}║")
         print(f"║ {Fore.CYAN}0. {lang['back'].ljust(38)}{Fore.YELLOW}║")
         print(f"╚{'═'*40}╝")
