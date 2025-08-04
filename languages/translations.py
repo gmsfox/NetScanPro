@@ -90,6 +90,7 @@ LANGUAGES = {
             'cleanup': f"{Fore.YELLOW}Cleaning up temporary files...",
             'press_enter': "Press Enter to continue...",
             'invalid': f"{Fore.RED}Invalid option",
+            'uninstall': "Uninstall VPN",
             'status_checking': f"{Fore.YELLOW}Checking VPN status..."
         }
     },
@@ -176,6 +177,7 @@ LANGUAGES = {
             'cleanup': f"{Fore.YELLOW}Limpando arquivos temporários...",
             'press_enter': "Pressione Enter para continuar...",
             'invalid': f"{Fore.RED}Opção inválida",
+            'uninstall': "Desinstalar VPN",
             'status_checking': f"{Fore.YELLOW}Verificando status da VPN..."
         }
     }
