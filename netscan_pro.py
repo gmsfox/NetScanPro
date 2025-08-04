@@ -6,6 +6,7 @@ Ferramenta de rede com funcionalidades de escaneamento e engenharia social.
 import os
 import platform
 import subprocess
+import turtle
 import venv
 import time
 import sys
@@ -363,7 +364,8 @@ def vpn_menu(user_language: str) -> None:
                     print(f"{Fore.RED}✖ {msg}")
                 else:
                     success, msg = VPNManager.status()
-                    print(f"\n{Fore.CYAN}{msg if success else Fore.RED + msg}")
+                    text_c = Fore.CYAN if success else Fore.RED
+                    print(f"\n{text_c}{msg}")
 
             elif escolha == "4":  # Instalar/Reinstalar
                 installed, msg = VPNManager.check_installation()
@@ -375,10 +377,15 @@ def vpn_menu(user_language: str) -> None:
                 print(f"{Fore.YELLOW}▶ {lang['installing']}")
                 success, msg = VPNManager.install()
                 print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+
                 if success:
                     print(f"{Fore.CYAN}▶ Verificando instalação...")
+                    time.sleep(2)
                     success, msg = VPNManager.check_installation()
                     print(f"{Fore.GREEN if success else Fore.YELLOW}→ {msg}")
+                    print(f"{Fore.CYAN}▶ Verificando comandos...")
+                    cli_check = VPNManager._run_command(["which", "protonvpn-cli"], check=False)[0]
+                    print(f"{Fore.GREEN if cli_check else Fore.RED}✓ {'CLI disponível' if cli_check else 'CLI não encontrado'}")
 
             elif escolha == "5":  # Desinstalar
                 installed, msg = VPNManager.check_installation()
@@ -391,10 +398,15 @@ def vpn_menu(user_language: str) -> None:
                     print(f"{Fore.YELLOW}▶ Desinstalando...")
                     success, msg = VPNManager.uninstall()
                     print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+
                     if success:
                         print(f"{Fore.CYAN}▶ Verificando desinstalação...")
+                        time.sleep(2)
                         success, msg = VPNManager.check_installation()
                         print(f"{Fore.RED if success else Fore.GREEN}→ {msg}")
+                        print(f"{Fore.CYAN}▶ Verificando remoção de comandos...")
+                        cli_check = VPNManager._run_command(["which", "protonvpn-cli"], check=False)[0]
+                        print(f"{Fore.RED if cli_check else Fore.GREEN}✓ {'CLI ainda presente' if cli_check else 'CLI removido com sucesso'}")
 
             elif escolha == "6":  # Verificar atualizações
                 installed, msg = VPNManager.check_installation()
