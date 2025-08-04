@@ -2,6 +2,9 @@ import os
 import subprocess
 import requests
 import time
+import hashlib
+import shutil
+import logging
 from typing import Tuple, List, Dict
 from pathlib import Path
 
@@ -62,7 +65,6 @@ class VPNManager:
     def _verify_checksum(file_path: Path, expected_checksum: str) -> Tuple[bool, str]:
         """Verifica o checksum SHA256 de um arquivo."""
         try:
-            import hashlib
             sha256_hash = hashlib.sha256()
 
             with open(file_path, 'rb') as f:
@@ -94,7 +96,6 @@ class VPNManager:
     @staticmethod
     def _install_protonvpn(repo_type: str = "stable") -> Tuple[bool, str]:
         """Instala o ProtonVPN a partir do repositório especificado."""
-        # 1. Baixar o pacote do repositório
         repo_info = VPNManager.OFFICIAL_REPO[repo_type]
         package_url = repo_info["package"]
         package_name = package_url.split('/')[-1]
@@ -104,12 +105,10 @@ class VPNManager:
         if not success:
             return False, msg
 
-        # 2. Verificar checksum
         success, msg = VPNManager._verify_checksum(package_path, repo_info["checksum"])
         if not success:
             return False, msg
 
-        # 3. Instalar o pacote do repositório
         commands = [
             ["sudo", "dpkg", "-i", str(package_path)],
             ["sudo", "apt", "update"],
@@ -127,7 +126,6 @@ class VPNManager:
     @staticmethod
     def check_installation() -> Tuple[bool, str]:
         """Verifica se o ProtonVPN está instalado."""
-        # Verifica tanto o CLI quanto o GUI
         cli_installed = VPNManager._run_command(["which", "protonvpn-cli"], check=False)[0]
         gui_installed = VPNManager._run_command(["which", "protonvpn"], check=False)[0]
 
@@ -138,20 +136,16 @@ class VPNManager:
     @staticmethod
     def install() -> Tuple[bool, str]:
         """Fluxo completo de instalação do ProtonVPN."""
-        # 1. Criar diretório se não existir
         success, msg = VPNManager._create_vpn_dir()
         if not success:
             return False, msg
 
-        # 2. Instalar dependências
         success, msg = VPNManager._install_dependencies()
         if not success:
             return False, msg
 
-        # 3. Tentar instalação estável primeiro
         success, msg = VPNManager._install_protonvpn("stable")
         if not success:
-            # Se falhar, tentar versão beta
             success, msg = VPNManager._install_protonvpn("beta")
             if not success:
                 return False, msg
@@ -160,43 +154,35 @@ class VPNManager:
 
     @staticmethod
     def uninstall() -> Tuple[bool, str]:
-        """Desinstala completamente o ProtonVPN e remove todos os registros."""
-        # 1. Desinstalar pacotes
-        commands = [
-            ["sudo", "apt", "autoremove", "-y", "proton-vpn-gnome-desktop", "protonvpn-cli"],
-            ["sudo", "apt", "purge", "-y", "protonvpn-stable-release", "protonvpn-beta-release"],
-            ["sudo", "rm", "-rf", "/etc/apt/sources.list.d/protonvpn*"],
-            ["sudo", "rm", "-rf", "/usr/share/keyrings/protonvpn*"],
-            ["sudo", "apt", "update"]
-        ]
+        """Desinstala completamente o ProtonVPN."""
+        try:
+            commands = [
+                ["sudo", "apt", "remove", "--purge", "-y", "protonvpn*"],
+                ["sudo", "apt", "autoremove", "-y"],
+                ["sudo", "rm", "-rf", "/etc/apt/sources.list.d/protonvpn*"],
+                ["sudo", "rm", "-rf", "/usr/share/keyrings/protonvpn*"],
+                ["sudo", "apt", "update"]
+            ]
 
-        for cmd in commands:
-            VPNManager._run_command(cmd, check=False)
+            for cmd in commands:
+                success, msg = VPNManager._run_command(cmd, check=False)
+                if not success:
+                    logging.warning(f"Falha ao executar {cmd}: {msg}")
 
-        # 2. Remover conexões do NetworkManager
-        success, connections = VPNManager._run_command(
-            ["nmcli", "connection", "show", "--active"]
-        )
-        if success:
-            for line in connections.split('\n'):
-                if line.startswith("pvpn-"):
-                    conn_name = line.split()[0]
-                    VPNManager._run_command(
-                        ["nmcli", "connection", "delete", conn_name],
-                        check=False
-                    )
+            home_dir = Path.home()
+            protonvpn_dirs = [
+                home_dir / ".cache/protonvpn",
+                home_dir / ".config/protonvpn",
+                home_dir / ".local/share/protonvpn"
+            ]
 
-        # 3. Remover diretório de configuração do usuário
-        home_dir = Path.home()
-        protonvpn_config = home_dir / ".config/protonvpn"
-        if protonvpn_config.exists():
-            try:
-                import shutil
-                shutil.rmtree(protonvpn_config)
-            except Exception:
-                pass
+            for dir_path in protonvpn_dirs:
+                if dir_path.exists():
+                    shutil.rmtree(dir_path, ignore_errors=True)
 
-        return True, "ProtonVPN desinstalado completamente"
+            return True, "ProtonVPN foi desinstalado com sucesso"
+        except Exception as e:
+            return False, f"Erro durante a desinstalação: {str(e)}"
 
     @staticmethod
     def connect() -> Tuple[bool, str]:
@@ -243,7 +229,6 @@ class VPNManager:
             if not success:
                 return False, msg
 
-        # Verifica especificamente por atualizações do ProtonVPN
         success, msg = VPNManager._run_command(
             ["apt", "list", "--upgradable", "protonvpn*"]
         )
