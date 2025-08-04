@@ -271,22 +271,40 @@ def update_dependencies_crossplatform(user_language: str) -> None:
         input(LANGUAGES[user_language]['common']['press_enter'])
 
 def vpn_menu(user_language: str) -> None:
-    """Menu completo de gerenciamento VPN"""
+    """Menu completo de gerenciamento VPN com tratamento robusto"""
     lang = LANGUAGES[user_language]['vpn']
 
     def mostrar_status() -> str:
-        """Exibe o status atual da VPN"""
-        installed, _ = VPNManager.check_installation()
-        if not installed:
+        """Exibe o status atual da VPN com verificações em 3 etapas"""
+        # 1. Verificação básica do CLI
+        cli_available = VPNManager._run_command(["which", "protonvpn-cli"], check=False)[0]
+        if not cli_available:
             return f"{Fore.RED}✖ {lang['not_installed']}"
 
+        # 2. Verificação completa da instalação
+        installed, install_msg = VPNManager.check_installation()
+        if not installed:
+            return f"{Fore.RED}✖ {install_msg}"
+
+        # 3. Verificação de status
         success, status_msg = VPNManager.status()
         if not success:
-            return f"{Fore.YELLOW}→ {status_msg}"
+            return f"{Fore.YELLOW}→ {status_msg[:35]}..."  # Limita tamanho
 
+        # 4. Interpretação do status
         if "Connected" in status_msg:
             return f"{Fore.GREEN}✔ {lang['connected']}"
         return f"{Fore.RED}✖ {lang['disconnected']}"
+
+    def get_confirmation(prompt: str) -> bool:
+        """Obtém confirmação do usuário de forma robusta"""
+        while True:
+            answer = input(prompt).strip().lower()
+            if answer in ('s', 'sim', 'y', 'yes'):
+                return True
+            elif answer in ('n', 'não', 'no'):
+                return False
+            print(f"{Fore.YELLOW}Por favor, responda com 's' ou 'n'")
 
     while True:
         clear_console()
@@ -306,94 +324,106 @@ def vpn_menu(user_language: str) -> None:
 
         escolha = input(f"\n{Fore.CYAN}▶ Selecione uma opção: ").strip()
 
-        if escolha == "1":  # Conectar
-            installed, _ = VPNManager.check_installation()
-            if not installed:
-                print(f"{Fore.RED}✖ {lang['not_installed']}")
-                if input(f"Deseja instalar agora? (s/n): ").lower() == 's':
-                    print(f"{Fore.YELLOW}▶ {lang['installing']}")
-                    success, msg = VPNManager.install()
-                    print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
-                    if success:
-                        print(f"{Fore.YELLOW}▶ {lang['connecting']}")
-                        success, msg = VPNManager.connect()
+        try:
+            if escolha == "1":  # Conectar
+                installed, msg = VPNManager.check_installation()
+                if not installed:
+                    print(f"{Fore.RED}✖ {msg}")
+                    if get_confirmation("Deseja instalar agora? (s/n): "):
+                        print(f"{Fore.YELLOW}▶ {lang['installing']}")
+                        success, msg = VPNManager.install()
                         print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
-                input(lang['press_enter'])
-                continue
-
-            print(f"{Fore.YELLOW}▶ {lang['connecting']}")
-            success, msg = VPNManager.connect()
-            print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
-            input(lang['press_enter'])
-
-        elif escolha == "2":  # Desconectar
-            installed, _ = VPNManager.check_installation()
-            if not installed:
-                print(f"{Fore.RED}✖ {lang['not_installed']}")
-                input(lang['press_enter'])
-                continue
-
-            print(f"{Fore.YELLOW}▶ {lang['disconnecting']}")
-            success, msg = VPNManager.disconnect()
-            print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
-            input(lang['press_enter'])
-
-        elif escolha == "3":  # Status
-            clear_console()
-            print(f"{Fore.YELLOW}▶ {lang['status_checking']}")
-            success, msg = VPNManager.status()
-            if success:
-                print(f"\n{Fore.CYAN}{msg}")
-            else:
-                print(f"{Fore.RED}✖ {msg}")
-            input(lang['press_enter'])
-
-        elif escolha == "4":  # Instalar
-            installed, _ = VPNManager.check_installation()
-            if installed:
-                print(f"{Fore.YELLOW}▶ ProtonVPN já está instalado")
-                if input("Deseja reinstalar? (s/n): ").strip().lower() != 's':
+                        if success:
+                            print(f"{Fore.YELLOW}▶ {lang['connecting']}")
+                            success, msg = VPNManager.connect()
+                            print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+                    input(lang['press_enter'])
                     continue
 
-            print(f"{Fore.YELLOW}▶ {lang['installing']}")
-            success, msg = VPNManager.install()
-            print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
-            input(lang['press_enter'])
+                print(f"{Fore.YELLOW}▶ {lang['connecting']}")
+                success, msg = VPNManager.connect()
+                print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
 
-        elif escolha == "5":  # Desinstalar
-            installed, _ = VPNManager.check_installation()
-            if not installed:
-                print(f"{Fore.RED}✖ {lang['not_installed']}")
-                input(lang['press_enter'])
+            elif escolha == "2":  # Desconectar
+                installed, msg = VPNManager.check_installation()
+                if not installed:
+                    print(f"{Fore.RED}✖ {msg}")
+                    input(lang['press_enter'])
+                    continue
+
+                print(f"{Fore.YELLOW}▶ {lang['disconnecting']}")
+                success, msg = VPNManager.disconnect()
+                print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+
+            elif escolha == "3":  # Status detalhado
+                clear_console()
+                print(f"{Fore.YELLOW}▶ {lang['status_checking']}")
+                installed, msg = VPNManager.check_installation()
+                if not installed:
+                    print(f"{Fore.RED}✖ {msg}")
+                else:
+                    success, msg = VPNManager.status()
+                    print(f"\n{Fore.CYAN}{msg if success else Fore.RED + msg}")
+
+            elif escolha == "4":  # Instalar/Reinstalar
+                installed, msg = VPNManager.check_installation()
+                if installed:
+                    print(f"{Fore.YELLOW}▶ {msg}")
+                    if not get_confirmation("Deseja reinstalar? (s/n): "):
+                        continue
+
+                print(f"{Fore.YELLOW}▶ {lang['installing']}")
+                success, msg = VPNManager.install()
+                print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+                if success:
+                    print(f"{Fore.CYAN}▶ Verificando instalação...")
+                    success, msg = VPNManager.check_installation()
+                    print(f"{Fore.GREEN if success else Fore.YELLOW}→ {msg}")
+
+            elif escolha == "5":  # Desinstalar
+                installed, msg = VPNManager.check_installation()
+                if not installed:
+                    print(f"{Fore.RED}✖ {msg}")
+                    input(lang['press_enter'])
+                    continue
+
+                if get_confirmation("Tem certeza que deseja desinstalar? (s/n): "):
+                    print(f"{Fore.YELLOW}▶ Desinstalando...")
+                    success, msg = VPNManager.uninstall()
+                    print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+                    if success:
+                        print(f"{Fore.CYAN}▶ Verificando desinstalação...")
+                        success, msg = VPNManager.check_installation()
+                        print(f"{Fore.RED if success else Fore.GREEN}→ {msg}")
+
+            elif escolha == "6":  # Verificar atualizações
+                installed, msg = VPNManager.check_installation()
+                if not installed:
+                    print(f"{Fore.RED}✖ {msg}")
+                    input(lang['press_enter'])
+                    continue
+
+                print(f"{Fore.YELLOW}▶ {lang['check_updates']}")
+                success, msg = VPNManager.check_updates()
+                print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+                if success and "disponíveis" in msg.lower():
+                    if get_confirmation("Deseja instalar atualizações? (s/n): "):
+                        success, msg = VPNManager.install()
+                        print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+
+            elif escolha == "0":  # Voltar
+                break
+
+            else:
+                print(f"{Fore.RED}✖ {lang['invalid']}")
+                time.sleep(1)
                 continue
 
-            confirm = input("Tem certeza que deseja desinstalar o ProtonVPN? (s/n): ").strip().lower()
-            if confirm == 's':
-                print(f"{Fore.YELLOW}▶ Desinstalando ProtonVPN...")
-            success, msg = VPNManager.uninstall()
-            print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+        except Exception as e:
+            print(f"{Fore.RED}⚠ Erro inesperado: {str(e)}")
+            logging.error(f"Erro no menu VPN: {str(e)}")
 
-        elif escolha == "6":  # Verificar atualizações
-            installed, _ = VPNManager.check_installation()
-            if not installed:
-                print(f"{Fore.RED}✖ {lang['not_installed']}")
-                input(lang['press_enter'])
-                continue
-
-            print(f"{Fore.YELLOW}▶ Verificando atualizações...")
-            success, msg = VPNManager.check_updates()
-            print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
-            if success and "disponíveis" in msg:
-                if input("Deseja instalar as atualizações? (s/n): ").lower() == 's':
-                    VPNManager.install()
-            input(lang['press_enter'])
-
-        elif escolha == "0":  # Voltar
-            break
-
-        else:
-            print(f"{Fore.RED}✖ {lang['invalid']}")
-            time.sleep(1)
+        input(lang['press_enter'])
 
 def main_menu(user_language: str) -> None:
     while True:

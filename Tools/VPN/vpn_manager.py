@@ -7,6 +7,8 @@ import shutil
 import logging
 from typing import Tuple, List, Dict
 from pathlib import Path
+import platform
+from colorama import Fore
 
 class VPNManager:
     # Configurações
@@ -53,10 +55,8 @@ class VPNManager:
         try:
             response = requests.get(url, timeout=30)
             response.raise_for_status()
-
             with open(dest, 'wb') as f:
                 f.write(response.content)
-
             return True, f"Arquivo baixado: {dest}"
         except requests.exceptions.RequestException as e:
             return False, f"Falha no download: {str(e)}"
@@ -66,13 +66,10 @@ class VPNManager:
         """Verifica o checksum SHA256 de um arquivo."""
         try:
             sha256_hash = hashlib.sha256()
-
             with open(file_path, 'rb') as f:
                 for byte_block in iter(lambda: f.read(4096), b""):
                     sha256_hash.update(byte_block)
-
             file_checksum = sha256_hash.hexdigest()
-
             if file_checksum == expected_checksum:
                 return True, "Checksum verificado com sucesso"
             else:
@@ -82,16 +79,22 @@ class VPNManager:
 
     @staticmethod
     def _install_dependencies() -> Tuple[bool, str]:
-        """Instala dependências necessárias."""
+        """Instala dependências necessárias com verificações."""
         deps = [
             "wget", "apt-transport-https", "gnupg",
             "libayatana-appindicator3-1",
             "gir1.2-ayatanaappindicator3-0.1",
             "gnome-shell-extension-appindicator"
         ]
-        return VPNManager._run_command(
-            ["sudo", "apt", "install", "-y"] + deps
-        )
+        success, installed = VPNManager._run_command(["dpkg", "-l"])
+        if not success:
+            return False, "Não foi possível verificar pacotes instalados"
+
+        missing_deps = [dep for dep in deps if dep not in installed]
+        if not missing_deps:
+            return True, "Dependências já instaladas"
+
+        return VPNManager._run_command(["sudo", "apt", "install", "-y"] + missing_deps)
 
     @staticmethod
     def _install_protonvpn(repo_type: str = "stable") -> Tuple[bool, str]:
@@ -128,24 +131,37 @@ class VPNManager:
         """Verifica se o ProtonVPN está instalado."""
         cli_installed = VPNManager._run_command(["which", "protonvpn-cli"], check=False)[0]
         gui_installed = VPNManager._run_command(["which", "protonvpn"], check=False)[0]
-
         if cli_installed or gui_installed:
             return True, "ProtonVPN está instalado"
         return False, "ProtonVPN não encontrado"
 
     @staticmethod
     def install() -> Tuple[bool, str]:
-        """Fluxo completo de instalação do ProtonVPN."""
+        """Fluxo completo de instalação com verificação de sistema."""
+        if platform.system() != "Linux":
+            return False, "Instalação só é suportada em Linux"
+
+        try:
+            with open("/etc/os-release", "r") as f:
+                content = f.read().lower()
+                if "debian" not in content and "ubuntu" not in content:
+                    return False, "Sistema não baseado em Debian/Ubuntu"
+        except:
+            return False, "Não foi possível verificar a distribuição"
+
         success, msg = VPNManager._create_vpn_dir()
         if not success:
             return False, msg
 
+        print(f"{Fore.CYAN}▶ Instalando dependências...")
         success, msg = VPNManager._install_dependencies()
         if not success:
             return False, msg
 
+        print(f"{Fore.CYAN}▶ Instalando versão estável...")
         success, msg = VPNManager._install_protonvpn("stable")
         if not success:
+            print(f"{Fore.YELLOW}▶ Tentando versão beta...")
             success, msg = VPNManager._install_protonvpn("beta")
             if not success:
                 return False, msg
@@ -163,7 +179,6 @@ class VPNManager:
                 ["sudo", "rm", "-rf", "/usr/share/keyrings/protonvpn*"],
                 ["sudo", "apt", "update"]
             ]
-
             for cmd in commands:
                 success, msg = VPNManager._run_command(cmd, check=False)
                 if not success:
@@ -175,7 +190,6 @@ class VPNManager:
                 home_dir / ".config/protonvpn",
                 home_dir / ".local/share/protonvpn"
             ]
-
             for dir_path in protonvpn_dirs:
                 if dir_path.exists():
                     shutil.rmtree(dir_path, ignore_errors=True)
@@ -190,9 +204,7 @@ class VPNManager:
         installed, _ = VPNManager.check_installation()
         if not installed:
             return False, "ProtonVPN não está instalado"
-        return VPNManager._run_command(
-            ["sudo", "protonvpn-cli", "connect", "--fastest"]
-        )
+        return VPNManager._run_command(["sudo", "protonvpn-cli", "connect", "--fastest"])
 
     @staticmethod
     def disconnect() -> Tuple[bool, str]:
@@ -200,9 +212,7 @@ class VPNManager:
         installed, _ = VPNManager.check_installation()
         if not installed:
             return False, "ProtonVPN não está instalado"
-        return VPNManager._run_command(
-            ["sudo", "protonvpn-cli", "disconnect"]
-        )
+        return VPNManager._run_command(["sudo", "protonvpn-cli", "disconnect"])
 
     @staticmethod
     def status() -> Tuple[bool, str]:
@@ -223,16 +233,12 @@ class VPNManager:
             ["sudo", "apt", "update"],
             ["apt", "list", "--upgradable"]
         ]
-
         for cmd in commands:
             success, msg = VPNManager._run_command(cmd)
             if not success:
                 return False, msg
 
-        success, msg = VPNManager._run_command(
-            ["apt", "list", "--upgradable", "protonvpn*"]
-        )
-
+        success, msg = VPNManager._run_command(["apt", "list", "--upgradable", "protonvpn*"])
         if "protonvpn" in msg.lower():
             return True, "Atualizações disponíveis para o ProtonVPN"
         return True, "O ProtonVPN está atualizado"
@@ -243,7 +249,4 @@ class VPNManager:
         installed, _ = VPNManager.check_installation()
         if not installed:
             return False, "ProtonVPN não está instalado"
-
-        return VPNManager._run_command(
-            ["sudo", "protonvpn-cli", "login", username, password]
-        )
+        return VPNManager._run_command(["sudo", "protonvpn-cli", "login", username, password])
