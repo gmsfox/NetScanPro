@@ -352,7 +352,7 @@ def vpn_menu(user_language: str) -> None:
             installed, _ = VPNManager.check_installation()
             if installed:
                 print(f"{Fore.YELLOW}▶ ProtonVPN já está instalado")
-                if input("Deseja reinstalar? (s/n): ").lower() != 's':
+                if input("Deseja reinstalar? (s/n): ").strip().lower() != 's':
                     continue
 
             print(f"{Fore.YELLOW}▶ {lang['installing']}")
@@ -367,12 +367,11 @@ def vpn_menu(user_language: str) -> None:
                 input(lang['press_enter'])
                 continue
 
-            confirm = input("Tem certeza que deseja desinstalar o ProtonVPN? (s/n): ").lower()
+            confirm = input("Tem certeza que deseja desinstalar o ProtonVPN? (s/n): ").strip().lower()
             if confirm == 's':
                 print(f"{Fore.YELLOW}▶ Desinstalando ProtonVPN...")
-                success, msg = VPNManager.uninstall()
-                print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
-            input(lang['press_enter'])
+            success, msg = VPNManager.uninstall()
+            print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
 
         elif escolha == "6":  # Verificar atualizações
             installed, _ = VPNManager.check_installation()
