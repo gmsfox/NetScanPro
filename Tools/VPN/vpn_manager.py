@@ -131,7 +131,8 @@ class VPNManager:
         """Verifica se o ProtonVPN está instalado."""
         cli_installed = VPNManager._run_command(["which", "protonvpn-cli"], check=False)[0]
         gui_installed = VPNManager._run_command(["which", "protonvpn"], check=False)[0]
-        if cli_installed or gui_installed:
+        ng_installed = VPNManager._run_command(["which", "protonvpn-cli-ng"], check=False)[0]
+        if cli_installed or gui_installed or ng_installed:
             return True, "ProtonVPN está instalado"
         return False, "ProtonVPN não encontrado"
 
@@ -199,12 +200,23 @@ class VPNManager:
             return False, f"Erro durante a desinstalação: {str(e)}"
 
     @staticmethod
+    def _get_cli_command() -> str:
+        """Retorna o comando CLI disponível para o ProtonVPN."""
+        for cmd in ["protonvpn-cli", "protonvpn-cli-ng", "protonvpn"]:
+            if shutil.which(cmd):
+                return cmd
+        return ""
+
+    @staticmethod
     def connect() -> Tuple[bool, str]:
         """Conecta à VPN usando o servidor mais rápido."""
         installed, _ = VPNManager.check_installation()
         if not installed:
             return False, "ProtonVPN não está instalado"
-        return VPNManager._run_command(["sudo", "protonvpn-cli", "connect", "--fastest"])
+        cli_cmd = VPNManager._get_cli_command()
+        if not cli_cmd:
+            return False, "Nenhum comando ProtonVPN CLI encontrado"
+        return VPNManager._run_command(["sudo", cli_cmd, "connect", "--fastest"])
 
     @staticmethod
     def disconnect() -> Tuple[bool, str]:
@@ -212,7 +224,10 @@ class VPNManager:
         installed, _ = VPNManager.check_installation()
         if not installed:
             return False, "ProtonVPN não está instalado"
-        return VPNManager._run_command(["sudo", "protonvpn-cli", "disconnect"])
+        cli_cmd = VPNManager._get_cli_command()
+        if not cli_cmd:
+            return False, "Nenhum comando ProtonVPN CLI encontrado"
+        return VPNManager._run_command(["sudo", cli_cmd, "disconnect"])
 
     @staticmethod
     def status() -> Tuple[bool, str]:
@@ -220,7 +235,10 @@ class VPNManager:
         installed, _ = VPNManager.check_installation()
         if not installed:
             return False, "ProtonVPN não está instalado"
-        return VPNManager._run_command(["protonvpn-cli", "status"], check=False)
+        cli_cmd = VPNManager._get_cli_command()
+        if not cli_cmd:
+            return False, "Nenhum comando ProtonVPN CLI encontrado"
+        return VPNManager._run_command([cli_cmd, "status"], check=False)
 
     @staticmethod
     def check_updates() -> Tuple[bool, str]:
