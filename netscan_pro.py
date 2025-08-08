@@ -368,24 +368,89 @@ def vpn_menu(user_language: str) -> None:
                     print(f"\n{text_c}{msg}")
 
             elif escolha == "4":  # Instalar/Reinstalar
-                installed, msg = VPNManager.check_installation()
-                if installed:
-                    print(f"{Fore.YELLOW}▶ {msg}")
-                    if not get_confirmation("Deseja reinstalar? (s/n): "):
+                try:
+                    installed, msg = VPNManager.check_installation()
+                    if installed:
+                        print(f"{Fore.YELLOW}▶ {msg}")
+                        if not get_confirmation("Deseja reinstalar? (s/n): "):
+                            continue
+
+                    print(f"{Fore.YELLOW}▶ Preparando ambiente para instalação...")
+
+                    # 1. Resolver possíveis conflitos de pacotes
+                    print(f"{Fore.CYAN}▶ Verificando conflitos de pacotes...")
+                    repair_cmds = [
+                        ["sudo", "apt", "--fix-broken", "install", "-y"],
+                        ["sudo", "apt", "autoremove", "-y"],
+                        ["sudo", "dpkg", "--configure", "-a"],
+                        ["sudo", "apt", "install", "-f", "-y"]
+                    ]
+
+                    for cmd in repair_cmds:
+                        VPNManager._run_command(cmd, check=False)
+
+                    # 2. Instalar dependências com tratamento especial
+                    print(f"{Fore.CYAN}▶ Instalando dependências básicas...")
+                    deps = [
+                        "wget", "gnupg", "software-properties-common",
+                        "libayatana-appindicator3-1", "dbus-x11"
+                    ]
+
+                    success, msg = VPNManager._run_command(
+                        ["sudo", "apt", "install", "-y"] + deps,
+                        check=False
+                    )
+
+                    if not success:
+                        print(f"{Fore.RED}✖ Falha nas dependências: {msg}")
+                        log_error(f"[install][error] Falha dependências: {msg}")
+                        input(lang['press_enter'])
                         continue
 
-                print(f"{Fore.YELLOW}▶ {lang['installing']}")
-                success, msg = VPNManager.install()
-                print(f"{Fore.GREEN if success else Fore.RED}✓ {msg}")
+                    # 3. Instalação do ProtonVPN com fallback
+                    print(f"{Fore.CYAN}▶ Baixando pacote oficial...")
+                    pkg_url = "https://repo.protonvpn.com/debian/dists/stable/main/binary-all/protonvpn-stable-release_1.0.3-2_all.deb"
+                    pkg_path = "/tmp/protonvpn-install.deb"
 
-                if success:
+                    download_cmd = f"wget {pkg_url} -O {pkg_path}"
+                    success, msg = VPNManager._run_command(download_cmd.split(), check=False) # type: ignore
+
+                    if not success:
+                        print(f"{Fore.RED}✖ Falha no download: {msg}")
+                        log_error(f"[install][error] Falha download: {msg}")
+                        input(lang['press_enter'])
+                        continue
+
+                    # 4. Instalação segura
+                    print(f"{Fore.CYAN}▶ Instalando pacote...")
+                    install_cmds = [
+                        ["sudo", "dpkg", "-i", pkg_path],
+                        ["sudo", "apt", "update"],
+                        ["sudo", "apt", "install", "-y", "protonvpn"],
+                        ["sudo", "apt", "--fix-broken", "install", "-y"]
+                    ]
+
+                    for cmd in install_cmds:
+                        success, msg = VPNManager._run_command(cmd, check=False)
+                        if not success:
+                            print(f"{Fore.YELLOW}⚠ Aviso: {msg}")
+
+                    # 5. Verificação final
                     print(f"{Fore.CYAN}▶ Verificando instalação...")
-                    time.sleep(2)
-                    success, msg = VPNManager.check_installation()
-                    print(f"{Fore.GREEN if success else Fore.YELLOW}→ {msg}")
-                    print(f"{Fore.CYAN}▶ Verificando comandos...")
-                    cli_check = VPNManager._run_command(["which", "protonvpn-cli"], check=False)[0]
-                    print(f"{Fore.GREEN if cli_check else Fore.RED}✓ {'CLI disponível' if cli_check else 'CLI não encontrado'}")
+                    installed, msg = VPNManager.check_installation()
+                    if installed:
+                        print(f"{Fore.GREEN}✓ Instalação concluída com sucesso!")
+                        log_error("[install] Instalação bem-sucedida")
+                    else:
+                        print(f"{Fore.RED}✖ Falha na instalação: {msg}")
+                        log_error(f"[install][error] Falha final: {msg}")
+
+                except Exception as e:
+                    error_msg = f"Erro crítico: {str(e)}"
+                    print(f"{Fore.RED}✖ {error_msg}")
+                    log_error(f"[install][error] {error_msg}")
+
+                input(lang['press_enter'])
 
             elif escolha == "5":  # Desinstalar
                 installed, msg = VPNManager.check_installation()
