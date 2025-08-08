@@ -12,6 +12,7 @@ import time
 import sys
 import logging
 import ctypes
+import shutil
 from colorama import init, Fore, Style
 from languages.translations import LANGUAGES
 from Tools.VPN.vpn_manager import VPNManager
@@ -437,8 +438,11 @@ def vpn_menu(user_language: str) -> None:
 
                     # 5. Verificação final
                     print(f"{Fore.CYAN}▶ Verificando instalação...")
+
+                    # Nova verificação: checa se o comando existe no sistema
+                    cli_found = shutil.which("protonvpn") or shutil.which("protonvpn-cli")
                     installed, msg = VPNManager.check_installation()
-                    if installed:
+                    if installed and cli_found:
                         print(f"{Fore.GREEN}✓ Instalação concluída com sucesso!")
                         log_error("[install] Instalação bem-sucedida")
                     else:
