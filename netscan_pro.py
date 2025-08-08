@@ -439,12 +439,14 @@ def vpn_menu(user_language: str) -> None:
                     # 5. Verificação final
                     print(f"{Fore.CYAN}▶ Verificando instalação...")
 
-                    # Nova verificação: checa se o comando existe no sistema
                     cli_found = shutil.which("protonvpn") or shutil.which("protonvpn-cli")
                     installed, msg = VPNManager.check_installation()
                     if installed and cli_found:
                         print(f"{Fore.GREEN}✓ Instalação concluída com sucesso!")
                         log_error("[install] Instalação bem-sucedida")
+                    elif installed and not cli_found:
+                        print(f"{Fore.RED}✖ O ProtonVPN parece estar instalado, mas o comando não foi encontrado no sistema.")
+                        log_error("[install][error] Falha final: Comando protonvpn não encontrado no sistema.")
                     else:
                         print(f"{Fore.RED}✖ Falha na instalação: {msg}")
                         log_error(f"[install][error] Falha final: {msg}")
