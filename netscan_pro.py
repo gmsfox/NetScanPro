@@ -572,6 +572,5 @@ def main() -> None:
     welcome_message(user_language)
     loading_screen(user_language)
     main_menu(user_language)
-
 if __name__ == "__main__":
     main()
