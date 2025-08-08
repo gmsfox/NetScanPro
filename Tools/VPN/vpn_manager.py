@@ -115,7 +115,7 @@ class VPNManager:
         commands = [
             ["sudo", "dpkg", "-i", str(package_path)],
             ["sudo", "apt", "update"],
-            ["sudo", "apt", "install", "-y", "protonvpn-gnome-desktop", "protonvpn-cli"],
+            ["sudo", "apt", "install", "-y", "protonvpn-gnome-desktop", "protonvpn-cli", "protonvpn-cli-ng"],
             ["sudo", "apt", "--fix-broken", "install", "-y"]
         ]
 
@@ -250,3 +250,17 @@ class VPNManager:
         if not installed:
             return False, "ProtonVPN não está instalado"
         return VPNManager._run_command(["sudo", "protonvpn-cli", "login", username, password])
+
+    @staticmethod
+    def setup_repository() -> Tuple[bool, str]:
+        """Configura o repositório oficial do ProtonVPN."""
+        try:
+            # Adiciona a chave do repositório
+            VPNManager._run_command(["sudo", "apt-key", "adv", "--keyserver", "keyserver.ubuntu.com", "--recv-keys", "0xYOURKEY"])
+            # Adiciona o repositório à lista de fontes
+            VPNManager._run_command(["sudo", "add-apt-repository", "deb https://repo.protonvpn.com/debian stable main"])
+            # Atualiza a lista de pacotes
+            VPNManager._run_command(["sudo", "apt", "update"])
+            return True, "Repositório do ProtonVPN configurado com sucesso"
+        except Exception as e:
+            return False, f"Erro ao configurar repositório: {str(e)}"
