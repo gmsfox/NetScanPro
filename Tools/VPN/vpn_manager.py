@@ -113,7 +113,7 @@ class VPNManager:
             return False, msg
 
         commands = [
-            ["sudo", "dpkg", "-i", str(package_path)],
+            ["sudo", "wget", "-q", "-O-", "https://protonvpn.com/download/protonvpn-public.asc", "|", "sudo", "tee", "/etc/apt/trusted.gpg.d/protonvpn.asc"],
             ["sudo", "apt", "update"],
             ["sudo", "apt", "install", "-y", "protonvpn-cli-ng"],
             ["sudo", "apt", "--fix-broken", "install", "-y"]

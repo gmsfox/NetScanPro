@@ -6,7 +6,7 @@ NÃO USE ISSUES PÚBLICOS, FORUMS OU REDES SOCIAIS PARA REPORTAR FALHAS DE SEGUR
 
 📧 Envie um e-mail criptografado (PGP) para:
 
-Email: gmsfox@protonmail.com<br/>
+Email: gmsfox@proton.me<br/>
 Chave PGP: https://github.com/gmsfox/NetScanPro/tree/main/asc <br/>
 Assunto: [VULNERABILIDADE GRAVE] NetScan Pro - [NOME DA FALHA].
 
@@ -51,11 +51,11 @@ Cada usuário é responsável por suas próprias ações. Se você não tem perm
 <br/>
 
 ⚖️ **USO ÉTICO E LEGAL**
-- **Licença:** [Apache 2.0](LICENSE) –  
-  - **Você DEVE:**  
-    - Manter o arquivo `LICENSE` e esta política (`SECURITY.md`) em *forks*.  
-    - Incluir aviso de copyright original.  
-  - **Você NÃO PODE:**  
+- **Licença:** [Apache 2.0](LICENSE) –
+  - **Você DEVE:**
+    - Manter o arquivo `LICENSE` e esta política (`SECURITY.md`) em *forks*.
+    - Incluir aviso de copyright original.
+  - **Você NÃO PODE:**
     - Nos responsabilizar por uso malicioso (consulte Seção 8 da licença).
     <br/>
 **Restrições Explícitas:**
@@ -95,6 +95,6 @@ Violar esta política pode resultar em:
 📬 **CONTATO PARA AUTORIDADES**
 Se você é uma autoridade legal e precisa entrar em contato:
 
-Email: gmsfox@protonmail.com  
-Assunto: [LEGAL REQUEST] + Nome da Autoridade  
+Email: gmsfox@proton.me
+Assunto: [LEGAL REQUEST] + Nome da Autoridade
 <h1>Exigimos documentos oficiais para comprovar legitimidade.</h1>
