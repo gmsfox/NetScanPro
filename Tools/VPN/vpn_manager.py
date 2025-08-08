@@ -115,7 +115,7 @@ class VPNManager:
         commands = [
             ["sudo", "dpkg", "-i", str(package_path)],
             ["sudo", "apt", "update"],
-            ["sudo", "apt", "install", "-y", "protonvpn-gnome-desktop", "protonvpn-cli", "protonvpn-cli-ng"],
+            ["sudo", "apt", "install", "-y", "protonvpn-cli-ng"],
             ["sudo", "apt", "--fix-broken", "install", "-y"]
         ]
 
