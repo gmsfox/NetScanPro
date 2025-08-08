@@ -386,60 +386,72 @@ def vpn_menu(user_language: str) -> None:
                         ["sudo", "dpkg", "--configure", "-a"],
                         ["sudo", "apt", "install", "-f", "-y"]
                     ]
-
                     for cmd in repair_cmds:
                         VPNManager._run_command(cmd, check=False)
 
-                    # 2. Instalar dependências com tratamento especial
+                    # 2. Instalar dependências básicas
                     print(f"{Fore.CYAN}▶ Instalando dependências básicas...")
                     deps = [
                         "wget", "gnupg", "software-properties-common",
                         "libayatana-appindicator3-1", "dbus-x11"
                     ]
-
                     success, msg = VPNManager._run_command(
                         ["sudo", "apt", "install", "-y"] + deps,
                         check=False
                     )
-
                     if not success:
                         print(f"{Fore.RED}✖ Falha nas dependências: {msg}")
                         log_error(f"[install][error] Falha dependências: {msg}")
                         input(lang['press_enter'])
                         continue
 
-                    # 3. Instalação do ProtonVPN com fallback
-                    print(f"{Fore.CYAN}▶ Baixando pacote oficial...")
-                    pkg_url = "https://repo.protonvpn.com/debian/dists/stable/main/binary-all/protonvpn-stable-release_1.0.3-2_all.deb"
-                    pkg_path = "/tmp/protonvpn-install.deb"
-
+                    # 3. Baixar e instalar o pacote do repositório
+                    print(f"{Fore.CYAN}▶ Baixando pacote do repositório oficial...")
+                    pkg_url = "https://repo.protonvpn.com/debian/dists/stable/main/binary-all/protonvpn-stable-release_1.0.8_all.deb"
+                    pkg_path = "/tmp/protonvpn-stable-release_1.0.8_all.deb"
                     download_cmd = f"wget {pkg_url} -O {pkg_path}"
-                    success, msg = VPNManager._run_command(download_cmd.split(), check=False) # type: ignore
-
+                    success, msg = VPNManager._run_command(["bash", "-c", download_cmd], check=False)
                     if not success:
                         print(f"{Fore.RED}✖ Falha no download: {msg}")
                         log_error(f"[install][error] Falha download: {msg}")
                         input(lang['press_enter'])
                         continue
 
-                    # 4. Instalação segura
-                    print(f"{Fore.CYAN}▶ Instalando pacote...")
-                    install_cmds = [
-                        ["sudo", "dpkg", "-i", pkg_path],
-                        ["sudo", "apt", "update"],
-                        ["sudo", "apt", "install", "-y", "protonvpn"],
-                        ["sudo", "apt", "--fix-broken", "install", "-y"]
-                    ]
+                    # 4. (Opcional) Verificar integridade do pacote
+                    print(f"{Fore.CYAN}▶ Verificando integridade do pacote...")
+                    sha_cmd = f"echo '0b14e71586b22e498eb20926c48c7b434b751149b1f2af9902ef1cfe6b03e180 {pkg_path}' | sha256sum --check -"
+                    success, msg = VPNManager._run_command(["bash", "-c", sha_cmd], check=False)
+                    if not success:
+                        print(f"{Fore.RED}✖ Falha na verificação do pacote: {msg}")
+                        log_error(f"[install][error] Falha verificação do pacote: {msg}")
+                        input(lang['press_enter'])
+                        continue
 
-                    for cmd in install_cmds:
-                        success, msg = VPNManager._run_command(cmd, check=False)
-                        if not success:
-                            print(f"{Fore.YELLOW}⚠ Aviso: {msg}")
+                    # 5. Instalar o pacote do repositório e atualizar
+                    print(f"{Fore.CYAN}▶ Instalando pacote do repositório...")
+                    install_repo_cmd = ["sudo", "dpkg", "-i", pkg_path]
+                    success, msg = VPNManager._run_command(install_repo_cmd, check=False)
+                    if not success:
+                        print(f"{Fore.RED}✖ Falha ao instalar o pacote do repositório: {msg}")
+                        log_error(f"[install][error] Falha ao instalar o pacote do repositório: {msg}")
+                        input(lang['press_enter'])
+                        continue
 
-                    # 5. Verificação final
+                    print(f"{Fore.CYAN}▶ Atualizando repositórios...")
+                    VPNManager._run_command(["sudo", "apt", "update"], check=False)
+
+                    # 6. Instalar o ProtonVPN CLI
+                    print(f"{Fore.CYAN}▶ Instalando ProtonVPN CLI...")
+                    success, msg = VPNManager._run_command(["sudo", "apt", "install", "-y", "protonvpn-cli-ng"], check=False)
+                    if not success:
+                        print(f"{Fore.RED}✖ Falha ao instalar ProtonVPN CLI: {msg}")
+                        log_error(f"[install][error] Falha ao instalar ProtonVPN CLI: {msg}")
+                        input(lang['press_enter'])
+                        continue
+
+                    # 7. Verificação final
                     print(f"{Fore.CYAN}▶ Verificando instalação...")
-
-                    cli_found = shutil.which("protonvpn") or shutil.which("protonvpn-cli")
+                    cli_found = shutil.which("protonvpn") or shutil.which("protonvpn-cli") or shutil.which("protonvpn-cli-ng")
                     installed, msg = VPNManager.check_installation()
                     if installed and cli_found:
                         print(f"{Fore.GREEN}✓ Instalação concluída com sucesso!")
