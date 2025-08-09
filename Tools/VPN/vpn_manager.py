@@ -139,6 +139,10 @@ class VPNManager:
             print(msg)
             return False, msg
 
+        success, msg = VPNManager._run_command(["apt-cache", "search", "protonvpn-cli-ng"])
+        if "protonvpn-cli-ng" not in msg:
+            return False, "O pacote protonvpn-cli-ng não está disponível no repositório. Verifique a compatibilidade com sua distribuição."
+
         return True, f"ProtonVPN ({repo_type}) instalado com sucesso"
 
     @staticmethod
