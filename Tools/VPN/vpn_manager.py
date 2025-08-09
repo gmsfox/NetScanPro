@@ -115,7 +115,7 @@ class VPNManager:
         commands = [
             ["sudo", "wget", "-q", "-O-", "https://protonvpn.com/download/protonvpn-public.asc", "|", "sudo", "tee", "/etc/apt/trusted.gpg.d/protonvpn.asc"],
             ["sudo", "apt", "update"],
-            ["sudo", "apt", "install", "-y", "protonvpn-cli-ng"],
+            ["sudo", "apt", "install", "-y", "protonvpn-stable-release"],
             ["sudo", "apt", "--fix-broken", "install", "-y"]
         ]
 
@@ -124,6 +124,8 @@ class VPNManager:
             if not success:
                 return False, msg
 
+        success, msg = VPNManager._run_command(["sudo", "dpkg", "-i", str(package_path)])
+        success, msg = VPNManager._run_command(["sudo", "apt", "update"])
         return True, f"ProtonVPN ({repo_type}) instalado com sucesso"
 
     @staticmethod
@@ -272,7 +274,11 @@ class VPNManager:
         """Configura o repositório oficial do ProtonVPN."""
         try:
             # Adiciona a chave do repositório
-            VPNManager._run_command(["sudo", "apt-key", "adv", "--keyserver", "keyserver.ubuntu.com", "--recv-keys", "0xYOURKEY"])
+            subprocess.run(
+                'wget -q -O- https://repo.protonvpn.com/debian/public_key.asc | sudo tee /etc/apt/trusted.gpg.d/protonvpn.asc',
+                shell=True,
+                check=True
+            )
             # Adiciona o repositório à lista de fontes
             VPNManager._run_command(["sudo", "add-apt-repository", "deb https://repo.protonvpn.com/debian stable main"])
             # Atualiza a lista de pacotes
