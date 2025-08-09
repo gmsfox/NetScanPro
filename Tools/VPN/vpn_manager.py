@@ -122,17 +122,21 @@ class VPNManager:
             return False, f"Erro ao adicionar chave GPG: {str(e)}"
 
         # Instala o pacote do repositório
-        success, msg = VPNManager._run_command(["sudo", "dpkg", "-i", str(package_path)])
+        success, msg = VPNManager._run_command(["sudo", "apt", "install", "-y", "protonvpn-stable-release"])
         if not success:
+            print(msg)
             return False, msg
 
-        # Atualiza e instala o CLI
+        # Atualiza o apt
         success, msg = VPNManager._run_command(["sudo", "apt", "update"])
         if not success:
+            print(msg)
             return False, msg
 
+        # Instala o CLI
         success, msg = VPNManager._run_command(["sudo", "apt", "install", "-y", "protonvpn-cli-ng"])
         if not success:
+            print(msg)
             return False, msg
 
         return True, f"ProtonVPN ({repo_type}) instalado com sucesso"
