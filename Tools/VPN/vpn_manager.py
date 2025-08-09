@@ -128,12 +128,10 @@ class VPNManager:
 
     @staticmethod
     def check_installation() -> Tuple[bool, str]:
-        """Verifica se o ProtonVPN está instalado."""
-        cli_installed = VPNManager._run_command(["which", "protonvpn-cli"], check=False)[0]
-        gui_installed = VPNManager._run_command(["which", "protonvpn"], check=False)[0]
-        ng_installed = VPNManager._run_command(["which", "protonvpn-cli-ng"], check=False)[0]
-        if cli_installed or gui_installed or ng_installed:
-            return True, "ProtonVPN está instalado"
+        """Verifica se o ProtonVPN CLI está instalado corretamente."""
+        for cmd in ["protonvpn-cli-ng", "protonvpn-cli", "protonvpn"]:
+            if shutil.which(cmd):
+                return True, "ProtonVPN está instalado"
         return False, "ProtonVPN não encontrado"
 
     @staticmethod
