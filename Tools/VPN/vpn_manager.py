@@ -98,7 +98,6 @@ class VPNManager:
 
     @staticmethod
     def _install_protonvpn(repo_type: str = "stable") -> Tuple[bool, str]:
-        """Instala o ProtonVPN a partir do repositório especificado."""
         repo_info = VPNManager.OFFICIAL_REPO[repo_type]
         package_url = repo_info["package"]
         package_name = package_url.split('/')[-1]
@@ -112,20 +111,30 @@ class VPNManager:
         if not success:
             return False, msg
 
-        commands = [
-            ["sudo", "wget", "-q", "-O-", "https://protonvpn.com/download/protonvpn-public.asc", "|", "sudo", "tee", "/etc/apt/trusted.gpg.d/protonvpn.asc"],
-            ["sudo", "apt", "update"],
-            ["sudo", "apt", "install", "-y", "protonvpn-stable-release"],
-            ["sudo", "apt", "--fix-broken", "install", "-y"]
-        ]
+        # Adiciona a chave GPG corretamente
+        try:
+            subprocess.run(
+                'wget -q -O- https://repo.protonvpn.com/debian/public_key.asc | sudo tee /etc/apt/trusted.gpg.d/protonvpn.asc',
+                shell=True,
+                check=True
+            )
+        except Exception as e:
+            return False, f"Erro ao adicionar chave GPG: {str(e)}"
 
-        for cmd in commands:
-            success, msg = VPNManager._run_command(cmd)
-            if not success:
-                return False, msg
-
+        # Instala o pacote do repositório
         success, msg = VPNManager._run_command(["sudo", "dpkg", "-i", str(package_path)])
+        if not success:
+            return False, msg
+
+        # Atualiza e instala o CLI
         success, msg = VPNManager._run_command(["sudo", "apt", "update"])
+        if not success:
+            return False, msg
+
+        success, msg = VPNManager._run_command(["sudo", "apt", "install", "-y", "protonvpn-cli-ng"])
+        if not success:
+            return False, msg
+
         return True, f"ProtonVPN ({repo_type}) instalado com sucesso"
 
     @staticmethod
