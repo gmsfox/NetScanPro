@@ -231,6 +231,40 @@ def verificar_requirements(user_language: str) -> None:
         log_error(f"Requirements check error: {str(e)}")
         print(f"{Fore.RED}{LANGUAGES[user_language]['requirements']['check_error']} {str(e)}")
 
+def check_for_updates() -> bool:
+    """Check if there are updates available in the remote repository."""
+    try:
+        # Fetch from origin silently to get latest remote info
+        result = subprocess.run(
+            ["git", "fetch", "origin", "main"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        # Compare local HEAD with remote origin/main
+        local_commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5
+        ).stdout.strip()
+
+        remote_commit = subprocess.run(
+            ["git", "rev-parse", "origin/main"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5
+        ).stdout.strip()
+
+        # Return True if commits are different (updates available)
+        return local_commit != remote_commit and remote_commit
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError):
+        return False
+
 def update_tool_from_github(user_language: str) -> None:
     """Update the project via GitHub with automatic conflict resolution."""
     clear_console()
@@ -583,8 +617,16 @@ def main_menu(user_language: str) -> None:
     while True:
         clear_console()
         print(f"{Fore.YELLOW}{Style.BRIGHT}{LANGUAGES[user_language]['menu']['title'].center(50, '-')}")
+
+        # Check for updates and highlight if available
+        has_updates = check_for_updates()
+
         for i, option in enumerate(LANGUAGES[user_language]['menu']['options'], 1):
-            print(f"{i}. {option}")
+            # Highlight "Atualizar Ferramenta" (option 3) in green if updates are available
+            if i == 3 and has_updates:
+                print(f"{i}. {Fore.GREEN}{Style.BRIGHT}[ATUALIZAÇÃO DISPONÍVEL]{Style.RESET_ALL} {option}")
+            else:
+                print(f"{i}. {option}")
         print(f"0. {LANGUAGES[user_language]['menu']['exit']}")
 
         choice = input(LANGUAGES[user_language]['menu']['choose']).strip()
