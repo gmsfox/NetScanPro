@@ -13,6 +13,7 @@ import sys
 import logging
 import ctypes
 import shutil
+import threading
 from colorama import init, Fore, Style
 from languages.translations import LANGUAGES
 from Tools.VPN.vpn_manager import VPNManager
@@ -20,6 +21,14 @@ from Tools.VPN.vpn_manager import VPNManager
 # Constants
 LANGUAGE_EN = '1'
 LANGUAGE_PT = '2'
+
+# Global cache for update checks (to avoid blocking)
+_update_cache = {
+    'tool_updates': None,
+    'dependency_updates': None,
+    'last_check': 0,
+    'cache_duration': 30  # Cache for 30 seconds
+}
 
 # Logging configuration
 LOG_DIR = "logs"
@@ -232,10 +241,29 @@ def verificar_requirements(user_language: str) -> None:
         print(f"{Fore.RED}{LANGUAGES[user_language]['requirements']['check_error']} {str(e)}")
 
 def check_for_updates() -> bool:
-    """Check if there are updates available in the remote repository."""
+    """Check if there are updates available (uses cache to avoid delays)."""
+    global _update_cache
+    current_time = time.time()
+
+    # Return cached result if fresh
+    if (_update_cache['tool_updates'] is not None and
+        current_time - _update_cache['last_check'] < _update_cache['cache_duration']):
+        return _update_cache['tool_updates']
+
+    # Return False immediately if cache is being checked
+    if _update_cache['tool_updates'] is None:
+        _update_cache['tool_updates'] = False
+        # Start background check
+        thread = threading.Thread(target=_check_tool_updates_background, daemon=True)
+        thread.start()
+
+    return _update_cache['tool_updates']
+
+def _check_tool_updates_background():
+    """Background thread to check for tool updates."""
+    global _update_cache
     try:
-        # Fetch from origin silently to get latest remote info
-        result = subprocess.run(
+        subprocess.run(
             ["git", "fetch", "origin", "main"],
             check=False,
             capture_output=True,
@@ -243,7 +271,6 @@ def check_for_updates() -> bool:
             timeout=5
         )
 
-        # Compare local HEAD with remote origin/main
         local_commit = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             check=False,
@@ -260,15 +287,34 @@ def check_for_updates() -> bool:
             timeout=5
         ).stdout.strip()
 
-        # Return True if commits are different (updates available)
-        return local_commit != remote_commit and remote_commit
-    except (subprocess.TimeoutExpired, subprocess.SubprocessError):
-        return False
+        _update_cache['tool_updates'] = local_commit != remote_commit and bool(remote_commit)
+        _update_cache['last_check'] = time.time()
+    except Exception:
+        _update_cache['tool_updates'] = False
 
 def check_for_dependency_updates() -> bool:
-    """Check if there are dependency updates available."""
+    """Check if there are dependency updates (uses cache to avoid delays)."""
+    global _update_cache
+    current_time = time.time()
+
+    # Return cached result if fresh
+    if (_update_cache['dependency_updates'] is not None and
+        current_time - _update_cache['last_check'] < _update_cache['cache_duration']):
+        return _update_cache['dependency_updates']
+
+    # Return False immediately if cache is being checked
+    if _update_cache['dependency_updates'] is None:
+        _update_cache['dependency_updates'] = False
+        # Start background check
+        thread = threading.Thread(target=_check_dependency_updates_background, daemon=True)
+        thread.start()
+
+    return _update_cache['dependency_updates']
+
+def _check_dependency_updates_background():
+    """Background thread to check for dependency updates."""
+    global _update_cache
     try:
-        # Get the python executable from venv
         is_windows = platform.system() == "Windows"
         python_bin = os.path.join(
             ".venv",
@@ -276,11 +322,9 @@ def check_for_dependency_updates() -> bool:
             "python.exe" if is_windows else "python"
         )
 
-        # Check if python_bin exists, otherwise use system python
         if not os.path.exists(python_bin):
             python_bin = sys.executable
 
-        # Check for outdated packages
         result = subprocess.run(
             [python_bin, "-m", "pip", "list", "--outdated"],
             check=False,
@@ -289,19 +333,36 @@ def check_for_dependency_updates() -> bool:
             timeout=10
         )
 
-        # If there's output (other than header), there are outdated packages
         lines = [line.strip() for line in result.stdout.split('\n') if line.strip()]
-        # Filter out the header line(s)
         outdated_packages = [line for line in lines if line and not line.startswith('Package') and not line.startswith('-')]
 
-        return len(outdated_packages) > 0
-    except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
-        return False
+        _update_cache['dependency_updates'] = len(outdated_packages) > 0
+        _update_cache['last_check'] = time.time()
+    except Exception:
+        _update_cache['dependency_updates'] = False
+def restart_application() -> None:
+    """Restart the application to load updated code."""
+    time.sleep(1)  # Give user time to read the message
+    clear_console()
+    print(f"{Fore.CYAN}Reiniciando aplicação para carregar atualizações...")
+    time.sleep(2)
+
+    # Get the python executable and script path
+    python_exec = sys.executable
+    script_path = os.path.abspath(sys.argv[0])
+
+    # Restart the application
+    if platform.system() == "Windows":
+        os.execv(python_exec, [python_exec, script_path])
+    else:
+        os.execv(python_exec, [python_exec, script_path])
 
 def update_tool_from_github(user_language: str) -> None:
     """Update the project via GitHub with automatic conflict resolution."""
     clear_console()
     print(f"{Fore.YELLOW}{LANGUAGES[user_language]['common']['updating']}")
+
+    update_successful = False
     try:
         # 1. Limpar arquivos não rastreados (__pycache__, .pyc, etc)
         print(f"{Fore.CYAN}▶ Limpando arquivos temporários...")
@@ -321,8 +382,15 @@ def update_tool_from_github(user_language: str) -> None:
         )
 
         if result.returncode == 0:
-            print(f"{Fore.GREEN}✓ {LANGUAGES[user_language]['common']['updated']}")
-            log_error("Tool update successful")
+            # Check if there were actual updates (not "Already up to date")
+            if "Already up to date" not in result.stdout and result.stdout.strip():
+                print(f"{Fore.GREEN}✓ {LANGUAGES[user_language]['common']['updated']}")
+                print(f"{Fore.CYAN}Recarregando aplicação...")
+                log_error("Tool update successful - restarting")
+                update_successful = True
+            else:
+                print(f"{Fore.CYAN}✓ Ferramenta já está atualizada")
+                log_error("Tool already up to date")
         else:
             error_msg = result.stderr if result.stderr else result.stdout
             if "Already up to date" in error_msg:
@@ -334,7 +402,11 @@ def update_tool_from_github(user_language: str) -> None:
         log_error(f"Tool update failed: {e}")
         print(f"{Fore.RED}✘ {LANGUAGES[user_language]['common']['error']} {e}")
     finally:
-        input(LANGUAGES[user_language]['common']['press_enter'])
+        if update_successful:
+            input(f"{Fore.GREEN}Pressione Enter para reiniciar a aplicação...")
+            restart_application()
+        else:
+            input(LANGUAGES[user_language]['common']['press_enter'])
 
 def find_venv_python_executable(venv_path: str) -> str:
     """Automatically find Python executable within venv."""
@@ -369,6 +441,7 @@ def update_dependencies_crossplatform(user_language: str) -> None:
                               "Scripts" if is_windows else "bin",
                               "pipreqs.exe" if is_windows else "pipreqs")
 
+    update_successful = False
     try:
         ensure_venv_support(user_language)
         if not os.path.exists(python_bin):
@@ -387,6 +460,9 @@ def update_dependencies_crossplatform(user_language: str) -> None:
 
         print(LANGUAGES[user_language]['common']['dependencies_success'])
         print(f"{Fore.GREEN}Generated file: {os.path.abspath('requirements.txt')}")
+        print(f"{Fore.CYAN}Recarregando aplicação...")
+        update_successful = True
+        log_error("Dependencies update successful - restarting")
 
     except subprocess.CalledProcessError as e:
         error_msg = f"Subprocess error: {e.stderr.decode().strip() if e.stderr else str(e)}"
@@ -396,7 +472,11 @@ def update_dependencies_crossplatform(user_language: str) -> None:
         log_error(f"Critical error: {str(e)}")
         print(f"{Fore.RED}{LANGUAGES[user_language]['common']['dependencies_error']} {str(e)}")
     finally:
-        input(LANGUAGES[user_language]['common']['press_enter'])
+        if update_successful:
+            input(f"{Fore.GREEN}Pressione Enter para reiniciar a aplicação...")
+            restart_application()
+        else:
+            input(LANGUAGES[user_language]['common']['press_enter'])
 
 def vpn_menu(user_language: str) -> None:
     """Menu completo de gerenciamento VPN com tratamento robusto"""
