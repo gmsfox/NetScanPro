@@ -132,7 +132,7 @@ def open_new_terminal(option: str) -> None:
     try:
         venv_python = os.path.join(".venv", "Scripts", "python.exe") if platform.system() == "Windows" else os.path.join(".venv", "bin", "python3")
         script_path = os.path.abspath(sys.argv[0])
-        
+
         if platform.system() == "Windows":
             # Windows: Use cmd with keep window open
             subprocess.Popen(["cmd", "/k", f"{venv_python} {script_path} --{option}"])
@@ -148,7 +148,7 @@ def open_new_terminal(option: str) -> None:
                 (["kitty"], "kitty"),
                 (["alacritty", "-e"], "alacritty"),
             ]
-            
+
             launched = False
             for cmd_prefix, terminal_name in terminal_options:
                 try:
@@ -159,7 +159,7 @@ def open_new_terminal(option: str) -> None:
                         break
                 except (subprocess.SubprocessError, FileNotFoundError):
                     continue
-            
+
             if not launched:
                 # Fallback: Run in background using nohup
                 subprocess.Popen(
@@ -239,11 +239,11 @@ def update_tool_from_github(user_language: str) -> None:
         # 1. Limpar arquivos não rastreados (__pycache__, .pyc, etc)
         print(f"{Fore.CYAN}▶ Limpando arquivos temporários...")
         subprocess.run(["git", "clean", "-fd"], check=False, capture_output=True)
-        
+
         # 2. Salvar mudanças locais (stash)
         print(f"{Fore.CYAN}▶ Salvando mudanças locais...")
         subprocess.run(["git", "stash"], check=False, capture_output=True)
-        
+
         # 3. Fazer pull
         print(f"{Fore.CYAN}▶ Baixando atualizações...")
         result = subprocess.run(
@@ -252,7 +252,7 @@ def update_tool_from_github(user_language: str) -> None:
             capture_output=True,
             text=True
         )
-        
+
         if result.returncode == 0:
             print(f"{Fore.GREEN}✓ {LANGUAGES[user_language]['common']['updated']}")
             log_error("Tool update successful")
