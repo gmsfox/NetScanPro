@@ -128,13 +128,46 @@ def loading_screen(user_language: str) -> None:
     print(LANGUAGES[user_language]['common']['loading'].center(60))
 
 def open_new_terminal(option: str) -> None:
-    """Open new terminal window."""
+    """Open new terminal window with fallback support for VMs and different environments."""
     try:
+        venv_python = os.path.join(".venv", "Scripts", "python.exe") if platform.system() == "Windows" else os.path.join(".venv", "bin", "python3")
+        script_path = os.path.abspath(sys.argv[0])
+        
         if platform.system() == "Windows":
-            subprocess.Popen(["cmd", "/k", f"python {sys.argv[0]} --{option}"])
+            # Windows: Use cmd with keep window open
+            subprocess.Popen(["cmd", "/k", f"{venv_python} {script_path} --{option}"])
         else:
-            subprocess.Popen(["x-terminal-emulator", "-e", f"python3 {sys.argv[0]} --{option}"])
-    except subprocess.SubprocessError as e:
+            # Linux: Try multiple terminal emulators for VM compatibility
+            terminal_options = [
+                (["x-terminal-emulator", "-e"], "x-terminal-emulator"),
+                (["xterm", "-e"], "xterm"),
+                (["gnome-terminal", "--", "bash", "-c"], "gnome-terminal"),
+                (["konsole", "-e"], "konsole"),
+                (["xfce4-terminal", "-e"], "xfce4-terminal"),
+                (["mate-terminal", "-e"], "mate-terminal"),
+                (["kitty"], "kitty"),
+                (["alacritty", "-e"], "alacritty"),
+            ]
+            
+            launched = False
+            for cmd_prefix, terminal_name in terminal_options:
+                try:
+                    if shutil.which(terminal_name):
+                        full_cmd = cmd_prefix + [f"{venv_python} {script_path} --{option}"]
+                        subprocess.Popen(full_cmd)
+                        launched = True
+                        break
+                except (subprocess.SubprocessError, FileNotFoundError):
+                    continue
+            
+            if not launched:
+                # Fallback: Run in background using nohup
+                subprocess.Popen(
+                    ["bash", "-c", f"{venv_python} {script_path} --{option} &"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+    except Exception as e:
         log_error(f"Error opening new terminal: {e}")
         print(f"{Fore.RED}{LANGUAGES[LANGUAGE_EN]['common']['error']} {e}")
 
@@ -203,8 +236,12 @@ def update_tool_from_github(user_language: str) -> None:
     clear_console()
     print(f"{Fore.YELLOW}{LANGUAGES[user_language]['common']['updating']}")
     try:
-        subprocess.run(["git", "pull", "https://github.com/gmsfox/NetScanPro.git"], check=True)
-        print(f"{Fore.GREEN}{LANGUAGES[user_language]['common']['updated']}")
+        result = subprocess.run(["git", "pull", "origin", "main"], check=False, capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"{Fore.GREEN}{LANGUAGES[user_language]['common']['updated']}")
+        else:
+            print(f"{Fore.YELLOW}Status: {result.stdout if result.stdout else result.stderr}")
+            log_error(f"Git pull output: {result.stderr if result.stderr else result.stdout}")
     except subprocess.SubprocessError as e:
         log_error(f"Tool update failed: {e}")
         print(f"{Fore.RED}{LANGUAGES[user_language]['common']['error']} {e}")
