@@ -622,9 +622,12 @@ def main_menu(user_language: str) -> None:
         has_updates = check_for_updates()
 
         for i, option in enumerate(LANGUAGES[user_language]['menu']['options'], 1):
-            # Highlight "Atualizar Ferramenta" (option 3) in green if updates are available
-            if i == 3 and has_updates:
-                print(f"{i}. {Fore.GREEN}{Style.BRIGHT}[ATUALIZAÇÃO DISPONÍVEL]{Style.RESET_ALL} {option}")
+            # Highlight "Atualizar Ferramenta" (option 3) with status indicator
+            if i == 3:
+                if has_updates:
+                    print(f"{i}. {Fore.GREEN}{Style.BRIGHT}[ATUALIZAÇÃO DISPONÍVEL]{Style.RESET_ALL} {option}")
+                else:
+                    print(f"{i}. {Fore.GREEN}{Style.BRIGHT}✓ Ferramenta atualizada{Style.RESET_ALL}")
             else:
                 print(f"{i}. {option}")
         print(f"0. {LANGUAGES[user_language]['menu']['exit']}")
