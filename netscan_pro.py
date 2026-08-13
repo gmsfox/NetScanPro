@@ -265,6 +265,39 @@ def check_for_updates() -> bool:
     except (subprocess.TimeoutExpired, subprocess.SubprocessError):
         return False
 
+def check_for_dependency_updates() -> bool:
+    """Check if there are dependency updates available."""
+    try:
+        # Get the python executable from venv
+        is_windows = platform.system() == "Windows"
+        python_bin = os.path.join(
+            ".venv",
+            "Scripts" if is_windows else "bin",
+            "python.exe" if is_windows else "python"
+        )
+
+        # Check if python_bin exists, otherwise use system python
+        if not os.path.exists(python_bin):
+            python_bin = sys.executable
+
+        # Check for outdated packages
+        result = subprocess.run(
+            [python_bin, "-m", "pip", "list", "--outdated"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+
+        # If there's output (other than header), there are outdated packages
+        lines = [line.strip() for line in result.stdout.split('\n') if line.strip()]
+        # Filter out the header line(s)
+        outdated_packages = [line for line in lines if line and not line.startswith('Package') and not line.startswith('-')]
+
+        return len(outdated_packages) > 0
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
+        return False
+
 def update_tool_from_github(user_language: str) -> None:
     """Update the project via GitHub with automatic conflict resolution."""
     clear_console()
@@ -618,16 +651,23 @@ def main_menu(user_language: str) -> None:
         clear_console()
         print(f"{Fore.YELLOW}{Style.BRIGHT}{LANGUAGES[user_language]['menu']['title'].center(50, '-')}")
 
-        # Check for updates and highlight if available
-        has_updates = check_for_updates()
+        # Check for updates
+        has_tool_updates = check_for_updates()
+        has_dependency_updates = check_for_dependency_updates()
 
         for i, option in enumerate(LANGUAGES[user_language]['menu']['options'], 1):
-            # Highlight "Atualizar Ferramenta" (option 3) with status indicator
+            # Option 3: Atualizar Ferramenta (tool updates)
             if i == 3:
-                if has_updates:
+                if has_tool_updates:
                     print(f"{i}. {Fore.GREEN}{Style.BRIGHT}[ATUALIZAÇÃO DISPONÍVEL]{Style.RESET_ALL} {option}")
                 else:
                     print(f"{i}. {Fore.GREEN}{Style.BRIGHT}✓ Ferramenta atualizada{Style.RESET_ALL}")
+            # Option 4: Atualizar Dependências (dependency updates)
+            elif i == 4:
+                if has_dependency_updates:
+                    print(f"{i}. {Fore.GREEN}{Style.BRIGHT}[ATUALIZAÇÃO DISPONÍVEL]{Style.RESET_ALL} {option}")
+                else:
+                    print(f"{i}. {Fore.GREEN}{Style.BRIGHT}✓ Dependências atualizadas{Style.RESET_ALL}")
             else:
                 print(f"{i}. {option}")
         print(f"0. {LANGUAGES[user_language]['menu']['exit']}")
