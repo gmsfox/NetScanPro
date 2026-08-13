@@ -232,20 +232,42 @@ def verificar_requirements(user_language: str) -> None:
         print(f"{Fore.RED}{LANGUAGES[user_language]['requirements']['check_error']} {str(e)}")
 
 def update_tool_from_github(user_language: str) -> None:
-    """Update the project via GitHub."""
+    """Update the project via GitHub with automatic conflict resolution."""
     clear_console()
     print(f"{Fore.YELLOW}{LANGUAGES[user_language]['common']['updating']}")
     try:
-        result = subprocess.run(["git", "pull", "origin", "main"], check=False, capture_output=True, text=True)
+        # 1. Limpar arquivos não rastreados (__pycache__, .pyc, etc)
+        print(f"{Fore.CYAN}▶ Limpando arquivos temporários...")
+        subprocess.run(["git", "clean", "-fd"], check=False, capture_output=True)
+        
+        # 2. Salvar mudanças locais (stash)
+        print(f"{Fore.CYAN}▶ Salvando mudanças locais...")
+        subprocess.run(["git", "stash"], check=False, capture_output=True)
+        
+        # 3. Fazer pull
+        print(f"{Fore.CYAN}▶ Baixando atualizações...")
+        result = subprocess.run(
+            ["git", "pull", "origin", "main"],
+            check=False,
+            capture_output=True,
+            text=True
+        )
+        
         if result.returncode == 0:
-            print(f"{Fore.GREEN}{LANGUAGES[user_language]['common']['updated']}")
+            print(f"{Fore.GREEN}✓ {LANGUAGES[user_language]['common']['updated']}")
+            log_error("Tool update successful")
         else:
-            print(f"{Fore.YELLOW}Status: {result.stdout if result.stdout else result.stderr}")
-            log_error(f"Git pull output: {result.stderr if result.stderr else result.stdout}")
+            error_msg = result.stderr if result.stderr else result.stdout
+            if "Already up to date" in error_msg:
+                print(f"{Fore.CYAN}✓ Ferramenta já está atualizada")
+            else:
+                print(f"{Fore.YELLOW}⚠ {error_msg}")
+                log_error(f"Git pull warning: {error_msg}")
     except subprocess.SubprocessError as e:
         log_error(f"Tool update failed: {e}")
-        print(f"{Fore.RED}{LANGUAGES[user_language]['common']['error']} {e}")
-    input(LANGUAGES[user_language]['common']['press_enter'])
+        print(f"{Fore.RED}✘ {LANGUAGES[user_language]['common']['error']} {e}")
+    finally:
+        input(LANGUAGES[user_language]['common']['press_enter'])
 
 def find_venv_python_executable(venv_path: str) -> str:
     """Automatically find Python executable within venv."""
