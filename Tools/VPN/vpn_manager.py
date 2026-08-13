@@ -154,6 +154,56 @@ class VPNManager:
         return False, "ProtonVPN não encontrado"
 
     @staticmethod
+    def get_connection_status() -> Tuple[bool, str]:
+        """Verifica se está conectado à VPN."""
+        installed, _ = VPNManager.check_installation()
+        if not installed:
+            return False, "VPN não instalada"
+
+        cli_cmd = VPNManager._get_cli_command()
+        if not cli_cmd:
+            return False, "Comando VPN não encontrado"
+
+        try:
+            success, output = VPNManager._run_command([cli_cmd, "status"], check=False)
+            if success:
+                output_lower = output.lower()
+                if "connected" in output_lower or "on" in output_lower:
+                    return True, "VPN conectada"
+                elif "disconnected" in output_lower or "off" in output_lower:
+                    return False, "VPN desconectada"
+        except Exception:
+            pass
+
+        return False, "Status desconhecido"
+
+    @staticmethod
+    def quick_connect() -> Tuple[bool, str]:
+        """Conecta rápido à VPN (servidor mais rápido)."""
+        installed, msg = VPNManager.check_installation()
+        if not installed:
+            return False, msg
+
+        cli_cmd = VPNManager._get_cli_command()
+        if not cli_cmd:
+            return False, "Comando VPN não encontrado"
+
+        return VPNManager._run_command(["sudo", cli_cmd, "connect", "--fastest"], check=False)
+
+    @staticmethod
+    def quick_disconnect() -> Tuple[bool, str]:
+        """Desconecta rápido da VPN."""
+        installed, msg = VPNManager.check_installation()
+        if not installed:
+            return False, msg
+
+        cli_cmd = VPNManager._get_cli_command()
+        if not cli_cmd:
+            return False, "Comando VPN não encontrado"
+
+        return VPNManager._run_command(["sudo", cli_cmd, "disconnect"], check=False)
+
+    @staticmethod
     def install() -> Tuple[bool, str]:
         """Fluxo completo de instalação com verificação de sistema."""
         if platform.system() != "Linux":
@@ -185,6 +235,26 @@ class VPNManager:
                 return False, msg
 
         return True, "ProtonVPN instalado com sucesso"
+
+    @staticmethod
+    def quick_install() -> Tuple[bool, str]:
+        """One-click installation - automatically installs with minimal prompts."""
+        print(f"{Fore.CYAN}╔═══════════════════════════════════════╗")
+        print(f"{Fore.CYAN}║  INSTALAÇÃO ONE-CLICK DO PROTONVPN    ║")
+        print(f"{Fore.CYAN}╚═══════════════════════════════════════╝")
+        print()
+        print(f"{Fore.YELLOW}Este processo irá:")
+        print(f"{Fore.YELLOW}  • Atualizar repositórios")
+        print(f"{Fore.YELLOW}  • Instalar dependências")
+        print(f"{Fore.YELLOW}  • Baixar e instalar ProtonVPN CLI")
+        print()
+
+        confirm = input(f"{Fore.CYAN}Deseja continuar? (s/n): ").lower()
+        if confirm != "s":
+            return False, "Instalação cancelada pelo usuário"
+
+        print()
+        return VPNManager.install()
 
     @staticmethod
     def uninstall() -> Tuple[bool, str]:

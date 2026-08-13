@@ -14,6 +14,7 @@ import logging
 import ctypes
 import shutil
 import threading
+from typing import Tuple
 from colorama import init, Fore, Style
 from languages.translations import LANGUAGES
 from Tools.VPN.vpn_manager import VPNManager
@@ -22,10 +23,12 @@ from Tools.VPN.vpn_manager import VPNManager
 LANGUAGE_EN = '1'
 LANGUAGE_PT = '2'
 
-# Global cache for update checks (to avoid blocking)
+# Global cache for update and VPN checks (to avoid blocking)
 _update_cache = {
     'tool_updates': None,
     'dependency_updates': None,
+    'vpn_installed': None,
+    'vpn_connected': None,
     'last_check': 0,
     'cache_duration': 30  # Cache for 30 seconds
 }
@@ -340,6 +343,45 @@ def _check_dependency_updates_background():
         _update_cache['last_check'] = time.time()
     except Exception:
         _update_cache['dependency_updates'] = False
+
+def check_vpn_status() -> Tuple[bool, bool]:
+    """Check VPN installation and connection status (uses cache)."""
+    global _update_cache
+    current_time = time.time()
+
+    # Return cached result if fresh
+    if (_update_cache['vpn_installed'] is not None and _update_cache['vpn_connected'] is not None and
+        current_time - _update_cache['last_check'] < _update_cache['cache_duration']):
+        return _update_cache['vpn_installed'], _update_cache['vpn_connected']
+
+    # Initialize cache if needed
+    if _update_cache['vpn_installed'] is None:
+        _update_cache['vpn_installed'] = False
+        _update_cache['vpn_connected'] = False
+        # Start background check
+        thread = threading.Thread(target=_check_vpn_status_background, daemon=True)
+        thread.start()
+
+    return _update_cache['vpn_installed'], _update_cache['vpn_connected']
+
+def _check_vpn_status_background():
+    """Background thread to check VPN status."""
+    global _update_cache
+    try:
+        installed, _ = VPNManager.check_installation()
+        _update_cache['vpn_installed'] = installed
+
+        if installed:
+            connected, _ = VPNManager.get_connection_status()
+            _update_cache['vpn_connected'] = connected
+        else:
+            _update_cache['vpn_connected'] = False
+
+        _update_cache['last_check'] = time.time()
+    except Exception:
+        _update_cache['vpn_installed'] = False
+        _update_cache['vpn_connected'] = False
+
 def restart_application() -> None:
     """Restart the application to load updated code."""
     time.sleep(1)  # Give user time to read the message
@@ -731,9 +773,10 @@ def main_menu(user_language: str) -> None:
         clear_console()
         print(f"{Fore.YELLOW}{Style.BRIGHT}{LANGUAGES[user_language]['menu']['title'].center(50, '-')}")
 
-        # Check for updates
+        # Check for updates and VPN status
         has_tool_updates = check_for_updates()
         has_dependency_updates = check_for_dependency_updates()
+        vpn_installed, vpn_connected = check_vpn_status()
 
         for i, option in enumerate(LANGUAGES[user_language]['menu']['options'], 1):
             # Option 3: Atualizar Ferramenta (tool updates)
@@ -748,6 +791,14 @@ def main_menu(user_language: str) -> None:
                     print(f"{i}. {Fore.GREEN}{Style.BRIGHT}[ATUALIZAÇÃO DISPONÍVEL]{Style.RESET_ALL} {option}")
                 else:
                     print(f"{i}. {Fore.GREEN}{Style.BRIGHT}✓ Dependências atualizadas{Style.RESET_ALL}")
+            # Option 5: Gerenciador VPN (VPN status)
+            elif i == 5:
+                if not vpn_installed:
+                    print(f"{i}. {Fore.RED}{Style.BRIGHT}[VPN NÃO INSTALADA]{Style.RESET_ALL} {option}")
+                elif vpn_connected:
+                    print(f"{i}. {Fore.GREEN}{Style.BRIGHT}✓ VPN Conectada{Style.RESET_ALL}")
+                else:
+                    print(f"{i}. {Fore.YELLOW}{Style.BRIGHT}[DESCONECTADA]{Style.RESET_ALL} {option}")
             else:
                 print(f"{i}. {option}")
         print(f"0. {LANGUAGES[user_language]['menu']['exit']}")
@@ -763,12 +814,7 @@ def main_menu(user_language: str) -> None:
         elif choice == '4':
             update_dependencies_crossplatform(user_language)
         elif choice == '5':  # VPN
-            if not VPNManager.check_installation()[0]:
-                print(f"{Fore.RED}ProtonVPN não está instalado!")
-                if input("Deseja baixar e instalar agora? (s/n): ").lower() == "s":
-                    vpn_menu(user_language)
-            else:
-                vpn_menu(user_language)
+            open_new_terminal("vpn-manager")
         elif choice == '6':
             view_logs(user_language)
         elif choice == '0':
@@ -797,6 +843,9 @@ def main() -> None:
         return
     if "--update-dependencies" in args:
         update_dependencies_crossplatform(LANGUAGE_PT)
+        return
+    if "--vpn-manager" in args:
+        vpn_menu(LANGUAGE_PT)
         return
 
     print(f"{Fore.YELLOW}Language Selection ".center(50, "-"))
