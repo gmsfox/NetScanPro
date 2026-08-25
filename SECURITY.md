@@ -75,8 +75,6 @@ Autoverificação:**
 
 - ensure_admin_privileges() evita execução inadvertida com privilégios elevados.
 
-- VPNManager força túnel criptografado para operações sensíveis.
-
 **Sem Backdoors:**
 
 - O código é auditável – nenhuma comunicação externa oculta é implementada.

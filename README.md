@@ -45,7 +45,7 @@ NetScan Pro é uma ferramenta avançada para escaneamento de rede e engenharia s
 
 ### Executando o NetScan Pro
 
-O NetScan Pro é compatível somente com terminais Linux. A instalação automática da VPN usa o pacote oficial do Proton VPN, suportado em Debian e Ubuntu, e exige acesso a `sudo`. No Kali ou em outra distribuição sem esse pacote nos repositórios, use a configuração manual de WireGuard/OpenVPN do Proton VPN.
+O NetScan Pro é compatível somente com terminais Linux e foi projetado para auditorias autorizadas.
 
 1. **Executar o Script:**
    - No diretório do projeto, execute:

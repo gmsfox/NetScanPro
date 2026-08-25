@@ -42,7 +42,6 @@ LANGUAGES = {
                 "Social Engineering Tools",
                 "Update Tool",
                 "Update Dependencies",
-                "VPN",
                 "View Logs"
             ],
             'exit': "Exit",
@@ -129,7 +128,6 @@ LANGUAGES = {
                 "Ferramentas de Eng. Social",
                 "Atualizar Ferramenta",
                 "Atualizar Dependências",
-                "VPN",
                 "Ver Logs"
             ],
             'exit': "Sair",
