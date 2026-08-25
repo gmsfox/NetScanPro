@@ -429,7 +429,8 @@ def update_dependencies_crossplatform(user_language: str) -> None:
     clear_console()
     print(f"{Fore.YELLOW}{LANGUAGES[user_language]['common']['updating']}")
 
-    venv_path = ".venv"
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+    venv_path = os.path.join(project_dir, ".venv")
     python_bin = os.path.join(venv_path, "bin", "python3")
     update_successful = False
     _update_cache['dependency_updates'] = False
@@ -438,13 +439,25 @@ def update_dependencies_crossplatform(user_language: str) -> None:
         ensure_venv_support(user_language)
         if not os.path.exists(python_bin):
             print(f"{Fore.CYAN}Creating virtual environment (.venv)...")
-            subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
+            subprocess.run(
+                [sys.executable, "-m", "venv", venv_path],
+                check=True,
+                capture_output=True,
+                text=True
+            )
 
         print(f"{Fore.CYAN}Checking requirements.txt...")
-        subprocess.run(
-            [python_bin, "-m", "pip", "install", "-r", "requirements.txt"],
-            check=True
+        result = subprocess.run(
+            [python_bin, "-m", "pip", "install", "-r", os.path.join(project_dir, "requirements.txt")],
+            check=False,
+            capture_output=True,
+            text=True
         )
+        if result.returncode != 0:
+            error_msg = result.stderr.strip() or result.stdout.strip()
+            raise subprocess.CalledProcessError(
+                result.returncode, result.args, output=result.stdout, stderr=error_msg
+            )
 
         print(LANGUAGES[user_language]['common']['dependencies_success'])
         update_successful = True
@@ -452,7 +465,9 @@ def update_dependencies_crossplatform(user_language: str) -> None:
         _update_cache['dependency_last_check'] = time.time()
 
     except subprocess.CalledProcessError as e:
-        error_msg = f"Subprocess error: {e.stderr.decode().strip() if e.stderr else str(e)}"
+        error_msg = e.stderr.strip() if isinstance(e.stderr, str) else str(e)
+        if not error_msg:
+            error_msg = e.stdout.strip() if isinstance(e.stdout, str) else str(e)
         log_error(error_msg)
         print(f"{Fore.RED}[✘] {LANGUAGES[user_language]['common']['error']}: {error_msg}")
     except (OSError, PermissionError, FileNotFoundError) as e:
