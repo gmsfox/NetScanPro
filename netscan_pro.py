@@ -28,7 +28,9 @@ _update_cache = {
     'dependency_updates': None,
     'vpn_installed': None,
     'vpn_connected': None,
-    'last_check': 0,
+    'tool_last_check': 0,
+    'dependency_last_check': 0,
+    'vpn_last_check': 0,
     'cache_duration': 30  # Cache for 30 seconds
 }
 
@@ -229,7 +231,7 @@ def check_for_updates() -> bool:
 
     # Return cached result if fresh
     if (_update_cache['tool_updates'] is not None and
-        current_time - _update_cache['last_check'] < _update_cache['cache_duration']):
+        current_time - _update_cache['tool_last_check'] < _update_cache['cache_duration']):
         return _update_cache['tool_updates']
 
     # Return False immediately if cache is being checked
@@ -270,7 +272,7 @@ def _check_tool_updates_background():
         ).stdout.strip()
 
         _update_cache['tool_updates'] = local_commit != remote_commit and bool(remote_commit)
-        _update_cache['last_check'] = time.time()
+        _update_cache['tool_last_check'] = time.time()
     except Exception:
         _update_cache['tool_updates'] = False
 
@@ -281,7 +283,7 @@ def check_for_dependency_updates() -> bool:
 
     # Return cached result if fresh
     if (_update_cache['dependency_updates'] is not None and
-        current_time - _update_cache['last_check'] < _update_cache['cache_duration']):
+        current_time - _update_cache['dependency_last_check'] < _update_cache['cache_duration']):
         return _update_cache['dependency_updates']
 
     # Return False immediately if cache is being checked
@@ -318,7 +320,7 @@ def _check_dependency_updates_background():
         outdated_packages = [line for line in lines if line and not line.startswith('Package') and not line.startswith('-')]
 
         _update_cache['dependency_updates'] = len(outdated_packages) > 0
-        _update_cache['last_check'] = time.time()
+        _update_cache['dependency_last_check'] = time.time()
     except Exception:
         _update_cache['dependency_updates'] = False
 
@@ -329,7 +331,7 @@ def check_vpn_status() -> Tuple[bool, bool]:
 
     # Return cached result if fresh
     if (_update_cache['vpn_installed'] is not None and _update_cache['vpn_connected'] is not None and
-        current_time - _update_cache['last_check'] < _update_cache['cache_duration']):
+        current_time - _update_cache['vpn_last_check'] < _update_cache['cache_duration']):
         return _update_cache['vpn_installed'], _update_cache['vpn_connected']
 
     # Initialize cache if needed
@@ -355,7 +357,7 @@ def _check_vpn_status_background():
         else:
             _update_cache['vpn_connected'] = False
 
-        _update_cache['last_check'] = time.time()
+        _update_cache['vpn_last_check'] = time.time()
     except Exception:
         _update_cache['vpn_installed'] = False
         _update_cache['vpn_connected'] = False

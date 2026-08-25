@@ -21,7 +21,7 @@ NetScan Pro é uma ferramenta avançada para escaneamento de rede e engenharia s
 
 ### Instalação
 
-#### Linux (Kali, Ubuntu, Debian, etc.)
+#### Linux (Debian ou Ubuntu)
 1. **Instalar Python e pip:**
    - Verifique e instale Python 3 e pip com os comandos:
      ```sh
@@ -45,7 +45,7 @@ NetScan Pro é uma ferramenta avançada para escaneamento de rede e engenharia s
 
 ### Executando o NetScan Pro
 
-O NetScan Pro é compatível somente com terminais Linux. A instalação da VPN e a atualização de dependências exigem uma distribuição baseada em Debian/Ubuntu e acesso a `sudo`.
+O NetScan Pro é compatível somente com terminais Linux. A instalação automática da VPN usa o pacote oficial do Proton VPN, suportado em Debian e Ubuntu, e exige acesso a `sudo`. No Kali ou em outra distribuição sem esse pacote nos repositórios, use a configuração manual de WireGuard/OpenVPN do Proton VPN.
 
 1. **Executar o Script:**
    - No diretório do projeto, execute:

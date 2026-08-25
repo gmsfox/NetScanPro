@@ -144,8 +144,18 @@ class VPNManager:
         if not success:
             return False, msg
 
+        package_name = "proton-vpn-gnome-desktop"
+        available, package_info = VPNManager._run_command(
+            ["apt-cache", "show", package_name], check=False
+        )
+        if not available:
+            return False, (
+                f"O pacote {package_name} não está disponível nos repositórios "
+                "desta distribuição. O Proton VPN oficial suporta Debian e Ubuntu."
+            )
+
         success, msg = VPNManager._run_command(
-            ["sudo", "apt-get", "install", "-y", "proton-vpn-gnome-desktop"]
+            ["sudo", "apt-get", "install", "-y", package_name]
         )
         if success and VPNManager._get_cli_command():
             return True, f"ProtonVPN ({repo_type}) instalado com sucesso"
@@ -241,10 +251,7 @@ class VPNManager:
         print(f"{Fore.CYAN}▶ Instalando versão estável...")
         success, msg = VPNManager._install_protonvpn("stable")
         if not success:
-            print(f"{Fore.YELLOW}▶ Tentando versão beta...")
-            success, msg = VPNManager._install_protonvpn("beta")
-            if not success:
-                return False, msg
+            return False, msg
 
         return True, "ProtonVPN instalado com sucesso"
 
