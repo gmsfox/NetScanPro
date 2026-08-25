@@ -402,7 +402,6 @@ def update_tool_from_github(user_language: str) -> None:
             if "Already up to date" not in result.stdout and result.stdout.strip():
                 print(f"{Fore.GREEN}✓ {LANGUAGES[user_language]['common']['updated']}")
                 print(f"{Fore.CYAN}Recarregando aplicação...")
-                log_error("Tool update successful - restarting")
                 update_successful = True
             else:
                 print(f"{Fore.CYAN}✓ Ferramenta já está atualizada")
@@ -472,7 +471,6 @@ def update_dependencies_crossplatform(user_language: str) -> None:
         print(f"{Fore.GREEN}Generated file: {os.path.abspath('requirements.txt')}")
         print(f"{Fore.CYAN}Recarregando aplicação...")
         update_successful = True
-        log_error("Dependencies update successful - restarting")
 
     except subprocess.CalledProcessError as e:
         error_msg = f"Subprocess error: {e.stderr.decode().strip() if e.stderr else str(e)}"
@@ -692,7 +690,7 @@ def main_menu(user_language: str) -> None:
         elif choice == '4':
             update_dependencies_crossplatform(user_language)
         elif choice == '5':  # VPN
-            open_new_terminal("vpn-manager")
+            vpn_menu(user_language)
         elif choice == '6':
             view_logs(user_language)
         elif choice == '0':
