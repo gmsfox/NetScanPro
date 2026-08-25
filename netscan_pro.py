@@ -8,6 +8,8 @@ import platform
 import subprocess
 import json
 import re
+import ipaddress
+import xml.etree.ElementTree as ET
 import venv
 import time
 import sys
@@ -217,6 +219,97 @@ def verificar_requirements(user_language: str) -> None:
     except (ValueError, UnicodeDecodeError) as e:
         log_error(f"Requirements check error: {str(e)}")
         print(f"{Fore.RED}{LANGUAGES[user_language]['requirements']['check_error']} {str(e)}")
+
+def network_tools_menu(user_language: str) -> None:
+    """Run a safe, authorized network inventory with Nmap."""
+    clear_console()
+    print(f"{Fore.CYAN}INVENTÁRIO DE REDE AUTORIZADO")
+    print(f"{Fore.YELLOW}Use somente um IP, uma rede privada ou localhost sob sua responsabilidade.")
+    target = input("Alvo autorizado (ex.: 127.0.0.1 ou 192.168.1.0/24): ").strip()
+
+    if target == "localhost":
+        target = "127.0.0.1"
+
+    try:
+        network = ipaddress.ip_network(target, strict=False)
+    except ValueError:
+        try:
+            address = ipaddress.ip_address(target)
+            network = ipaddress.ip_network(f"{address}/{address.max_prefixlen}")
+        except ValueError:
+            print(f"{Fore.RED}Alvo inválido. Informe um IP, uma rede CIDR privada ou localhost.")
+            input(LANGUAGES[user_language]['common']['press_enter'])
+            return
+
+    if not (network.is_private or network.is_loopback):
+        print(f"{Fore.RED}Por segurança, somente alvos privados ou localhost são aceitos.")
+        input(LANGUAGES[user_language]['common']['press_enter'])
+        return
+
+    confirmation = input(
+        f"Digite AUTORIZADO para confirmar o escopo {target}: "
+    ).strip()
+    if confirmation != "AUTORIZADO":
+        print(f"{Fore.YELLOW}Varredura cancelada.")
+        input(LANGUAGES[user_language]['common']['press_enter'])
+        return
+
+    if not shutil.which("nmap"):
+        print(f"{Fore.RED}Nmap não encontrado. Instale-o com: sudo apt install nmap")
+        input(LANGUAGES[user_language]['common']['press_enter'])
+        return
+
+    command = [
+        "nmap", "-sT", "-sV", "--version-light", "--top-ports", "100",
+        "-oX", "-", target
+    ]
+    try:
+        result = subprocess.run(
+            command, capture_output=True, text=True, check=False, timeout=120
+        )
+        if result.returncode != 0:
+            message = result.stderr.strip() or result.stdout.strip()
+            log_error(f"Nmap failed for authorized target {target}: {message}")
+            print(f"{Fore.RED}Falha no Nmap: {message}")
+            input(LANGUAGES[user_language]['common']['press_enter'])
+            return
+
+        root = ET.fromstring(result.stdout)
+        hosts = []
+        for host in root.findall("host"):
+            address_node = host.find("address")
+            address = address_node.get("addr") if address_node is not None else "unknown"
+            ports = []
+            for port in host.findall("./ports/port"):
+                state = port.find("state")
+                if state is None or state.get("state") != "open":
+                    continue
+                service = port.find("service")
+                ports.append({
+                    "port": int(port.get("portid", "0")),
+                    "protocol": port.get("protocol", "tcp"),
+                    "service": service.get("name", "") if service is not None else "",
+                    "product": service.get("product", "") if service is not None else "",
+                    "version": service.get("version", "") if service is not None else ""
+                })
+            hosts.append({"address": address, "ports": ports})
+
+        report_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports")
+        os.makedirs(report_dir, exist_ok=True)
+        report_path = os.path.join(report_dir, "network_inventory.json")
+        with open(report_path, "w", encoding="utf-8") as report_file:
+            json.dump({"target": target, "hosts": hosts}, report_file, indent=2)
+
+        print(f"{Fore.GREEN}Inventário concluído: {len(hosts)} host(s) encontrado(s).")
+        print(f"Relatório: {report_path}")
+        for host in hosts:
+            open_ports = ", ".join(str(port["port"]) for port in host["ports"])
+            print(f"{host['address']}: portas abertas: {open_ports or 'nenhuma'}")
+    except (ET.ParseError, OSError, subprocess.SubprocessError) as error:
+        log_error(f"Network inventory error for authorized target {target}: {error}")
+        print(f"{Fore.RED}Erro no inventário: {error}")
+
+    input(LANGUAGES[user_language]['common']['press_enter'])
 
 def check_for_updates() -> bool:
     """Check if there are updates available (uses cache to avoid delays)."""
@@ -510,7 +603,7 @@ def main_menu(user_language: str) -> None:
         choice = input(LANGUAGES[user_language]['menu']['choose']).strip()
 
         if choice == '1':
-            open_new_terminal("network-tools")
+            network_tools_menu(user_language)
         elif choice == '2':
             open_new_terminal("social-tools")
         elif choice == '3':
@@ -537,8 +630,7 @@ def main() -> None:
     args = sys.argv[1:]
 
     if "--network-tools" in args:
-        print(f"{Fore.YELLOW}{LANGUAGES[LANGUAGE_EN]['network']['simulated']}")
-        input(f"{Fore.YELLOW}{LANGUAGES[LANGUAGE_EN]['common']['press_enter']}")
+        network_tools_menu(LANGUAGE_PT)
         return
     if "--social-tools" in args:
         print(f"{Fore.YELLOW}{LANGUAGES[LANGUAGE_EN]['social']['simulated']}")

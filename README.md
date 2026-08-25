@@ -26,7 +26,7 @@ NetScan Pro é uma ferramenta avançada para escaneamento de rede e engenharia s
    - Verifique e instale Python 3 e pip com os comandos:
      ```sh
      sudo apt update
-     sudo apt install python3 python3-pip
+    sudo apt install python3 python3-pip nmap
      ```
 
 2. **Instalar Git (se necessário):**
@@ -57,7 +57,10 @@ O NetScan Pro é compatível somente com terminais Linux e foi projetado para au
    - Ao iniciar, escolha o idioma (1 para Inglês, 2 para Português).
 
 3. **Menu Principal:**
-   - Escolha entre as opções de ferramentas de rede e engenharia social, ou atualize diretamente do GitHub.
+  - A opção de rede executa um inventário autorizado com Nmap.
+  - Informe somente um IP privado, uma rede privada em CIDR ou `localhost`.
+  - Digite `AUTORIZADO` para confirmar o escopo antes da execução.
+  - O relatório é salvo em `reports/network_inventory.json`.
 
 4. **Atualização Automática:**
    - A opção "Atualizar Ferramenta do GitHub" verifica novos arquivos ou código atualizado, exibindo o progresso e reiniciando após a atualização.
