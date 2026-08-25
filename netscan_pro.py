@@ -442,34 +442,26 @@ def find_venv_python_executable(venv_path: str) -> str:
     raise FileNotFoundError(f"Virtual environment executable not found: {venv_path}")
 
 def update_dependencies_crossplatform(user_language: str) -> None:
-    """Update dependencies automatically with advanced filters."""
+    """Install only the Python dependencies missing from the virtual environment."""
     clear_console()
     print(f"{Fore.YELLOW}{LANGUAGES[user_language]['common']['updating']}")
 
     venv_path = ".venv"
     python_bin = os.path.join(venv_path, "bin", "python3")
-    pipreqs_path = os.path.join(venv_path, "bin", "pipreqs")
-
     update_successful = False
     try:
         ensure_venv_support(user_language)
         if not os.path.exists(python_bin):
             print(f"{Fore.CYAN}Creating virtual environment (.venv)...")
             subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
-            time.sleep(5)
 
-        print(f"{Fore.CYAN}Installing pipreqs...")
-        subprocess.run([python_bin, "-m", "pip", "install", "--upgrade", "pipreqs"], check=True)
-
-        print(f"{Fore.CYAN}Generating requirements.txt...")
-        subprocess.run([pipreqs_path, ".", "--force", "--encoding", "utf-8"], check=True)
-
-        limpar_requirements(user_language)
-        verificar_requirements(user_language)
+        print(f"{Fore.CYAN}Checking requirements.txt...")
+        subprocess.run(
+            [python_bin, "-m", "pip", "install", "-r", "requirements.txt"],
+            check=True
+        )
 
         print(LANGUAGES[user_language]['common']['dependencies_success'])
-        print(f"{Fore.GREEN}Generated file: {os.path.abspath('requirements.txt')}")
-        print(f"{Fore.CYAN}Recarregando aplicação...")
         update_successful = True
 
     except subprocess.CalledProcessError as e:
@@ -481,8 +473,7 @@ def update_dependencies_crossplatform(user_language: str) -> None:
         print(f"{Fore.RED}{LANGUAGES[user_language]['common']['dependencies_error']} {str(e)}")
     finally:
         if update_successful:
-            input(f"{Fore.GREEN}Pressione Enter para reiniciar a aplicação...")
-            restart_application()
+            input(LANGUAGES[user_language]['common']['press_enter'])
         else:
             input(LANGUAGES[user_language]['common']['press_enter'])
 

@@ -81,22 +81,29 @@ class VPNManager:
 
     @staticmethod
     def _install_dependencies() -> Tuple[bool, str]:
-        """Instala dependências necessárias com verificações."""
+        """Instala somente as dependências Linux que ainda não existem."""
         deps = [
-            "wget", "apt-transport-https", "gnupg",
-            "libayatana-appindicator3-1",
-            "gir1.2-ayatanaappindicator3-0.1",
-            "gnome-shell-extension-appindicator"
+            "ca-certificates", "wget", "gnupg"
         ]
-        success, installed = VPNManager._run_command(["dpkg", "-l"])
-        if not success:
-            return False, "Não foi possível verificar pacotes instalados"
 
-        missing_deps = [dep for dep in deps if dep not in installed]
+        missing_deps = []
+        for package in deps:
+            success, status = VPNManager._run_command(
+                ["dpkg-query", "-W", "-f=${Status}", package], check=False
+            )
+            if not success or status != "install ok installed":
+                missing_deps.append(package)
+
         if not missing_deps:
             return True, "Dependências já instaladas"
 
-        return VPNManager._run_command(["sudo", "apt", "install", "-y"] + missing_deps)
+        success, msg = VPNManager._run_command(["sudo", "apt-get", "update"])
+        if not success:
+            return False, f"Falha ao atualizar índices do APT: {msg}"
+
+        return VPNManager._run_command(
+            ["sudo", "apt-get", "install", "-y"] + missing_deps
+        )
 
     @staticmethod
     def _install_protonvpn(repo_type: str = "stable") -> Tuple[bool, str]:
