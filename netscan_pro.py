@@ -6,6 +6,8 @@ Ferramenta de rede com funcionalidades de escaneamento e engenharia social.
 import os
 import platform
 import subprocess
+import json
+import re
 import venv
 import time
 import sys
@@ -291,7 +293,9 @@ def _check_dependency_updates_background():
     """Background thread to check for dependency updates."""
     global _update_cache
     try:
+        project_dir = os.path.dirname(os.path.abspath(__file__))
         python_bin = os.path.join(
+            project_dir,
             ".venv",
             "bin",
             "python"
@@ -300,18 +304,40 @@ def _check_dependency_updates_background():
         if not os.path.exists(python_bin):
             python_bin = sys.executable
 
+        requirements_path = os.path.join(project_dir, "requirements.txt")
+        with open(requirements_path, "r", encoding="utf-8") as requirements_file:
+            required_packages = {
+                re.split(r"[<>=!~;\[]", line.split("#", 1)[0], maxsplit=1)[0]
+                .strip()
+                .lower()
+                .replace("_", "-")
+                for line in requirements_file
+                if line.strip() and not line.lstrip().startswith("#")
+            }
+
         result = subprocess.run(
-            [python_bin, "-m", "pip", "list", "--outdated"],
+            [
+                python_bin, "-m", "pip", "list", "--outdated",
+                "--format=json", "--disable-pip-version-check"
+            ],
             check=False,
             capture_output=True,
             text=True,
             timeout=10
         )
 
-        lines = [line.strip() for line in result.stdout.split('\n') if line.strip()]
-        outdated_packages = [line for line in lines if line and not line.startswith('Package') and not line.startswith('-')]
+        if result.returncode != 0:
+            _update_cache['dependency_updates'] = False
+            return
 
-        _update_cache['dependency_updates'] = len(outdated_packages) > 0
+        outdated_packages = json.loads(result.stdout)
+        relevant_updates = {
+            package["name"].lower().replace("_", "-")
+            for package in outdated_packages
+            if package.get("name")
+        } & required_packages
+
+        _update_cache['dependency_updates'] = bool(relevant_updates)
         _update_cache['dependency_last_check'] = time.time()
     except Exception:
         _update_cache['dependency_updates'] = False
