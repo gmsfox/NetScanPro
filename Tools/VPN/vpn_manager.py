@@ -5,6 +5,7 @@ import time
 import hashlib
 import shutil
 import logging
+import re
 from typing import Tuple, List, Dict
 from pathlib import Path
 import platform
@@ -34,7 +35,8 @@ class VPNManager:
                 capture_output=True,
                 text=True
             )
-            return True, result.stdout.strip()
+            output = result.stdout.strip() or result.stderr.strip()
+            return result.returncode == 0, output
         except subprocess.CalledProcessError as e:
             return False, e.stderr.strip() if e.stderr else str(e)
         except FileNotFoundError:
@@ -111,39 +113,38 @@ class VPNManager:
         if not success:
             return False, msg
 
-        # Adiciona a chave GPG corretamente
+        # Instala o pacote local que configura o repositório oficial.
         try:
-            subprocess.run(
-                'wget -q -O- https://repo.protonvpn.com/debian/public_key.asc | sudo tee /etc/apt/trusted.gpg.d/protonvpn.asc',
-                shell=True,
-                check=True
+            result = subprocess.run(
+                ["sudo", "dpkg", "-i", str(package_path)],
+                capture_output=True,
+                text=True,
+                check=False
             )
-        except Exception as e:
-            return False, f"Erro ao adicionar chave GPG: {str(e)}"
+            if result.returncode != 0:
+                repair = subprocess.run(
+                    ["sudo", "apt-get", "install", "-f", "-y"],
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                if repair.returncode != 0:
+                    return False, repair.stderr.strip() or result.stderr.strip()
+        except OSError as e:
+            return False, f"Erro ao instalar o pacote do repositório: {e}"
 
-        # Instala o pacote do repositório
-        success, msg = VPNManager._run_command(["sudo", "apt", "install", "-y", "protonvpn-stable-release"])
+        success, msg = VPNManager._run_command(["sudo", "apt-get", "update"])
         if not success:
-            print(msg)
             return False, msg
 
-        # Atualiza o apt
-        success, msg = VPNManager._run_command(["sudo", "apt", "update"])
-        if not success:
-            print(msg)
-            return False, msg
+        for package in ["protonvpn-cli", "protonvpn-cli-ng"]:
+            success, msg = VPNManager._run_command(
+                ["sudo", "apt-get", "install", "-y", package]
+            )
+            if success:
+                return True, f"ProtonVPN ({repo_type}) instalado com sucesso"
 
-        # Instala o CLI
-        success, msg = VPNManager._run_command(["sudo", "apt", "install", "-y", "protonvpn-cli-ng"])
-        if not success:
-            print(msg)
-            return False, msg
-
-        success, msg = VPNManager._run_command(["apt-cache", "search", "protonvpn-cli-ng"])
-        if "protonvpn-cli-ng" not in msg:
-            return False, "O pacote protonvpn-cli-ng não está disponível no repositório. Verifique a compatibilidade com sua distribuição."
-
-        return True, f"ProtonVPN ({repo_type}) instalado com sucesso"
+        return False, msg or "Não foi possível instalar um CLI compatível do ProtonVPN"
 
     @staticmethod
     def check_installation() -> Tuple[bool, str]:
@@ -166,12 +167,11 @@ class VPNManager:
 
         try:
             success, output = VPNManager._run_command([cli_cmd, "status"], check=False)
-            if success:
-                output_lower = output.lower()
-                if "connected" in output_lower or "on" in output_lower:
-                    return True, "VPN conectada"
-                elif "disconnected" in output_lower or "off" in output_lower:
-                    return False, "VPN desconectada"
+            output_lower = output.lower()
+            if re.search(r"\b(disconnected|off|not connected)\b", output_lower):
+                return False, "VPN desconectada"
+            if success and re.search(r"\b(connected|on)\b", output_lower):
+                return True, "VPN conectada"
         except Exception:
             pass
 
@@ -354,7 +354,10 @@ class VPNManager:
         installed, _ = VPNManager.check_installation()
         if not installed:
             return False, "ProtonVPN não está instalado"
-        return VPNManager._run_command(["sudo", "protonvpn-cli", "login", username, password])
+        cli_cmd = VPNManager._get_cli_command()
+        if not cli_cmd:
+            return False, "Nenhum comando ProtonVPN CLI encontrado"
+        return VPNManager._run_command(["sudo", cli_cmd, "login", username, password])
 
     @staticmethod
     def setup_repository() -> Tuple[bool, str]:

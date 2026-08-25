@@ -499,22 +499,14 @@ def vpn_menu(user_language: str) -> None:
     def mostrar_status() -> str:
         """Exibe o status atual da VPN com verificações em 3 etapas"""
         try:
-            # 1. Verificação básica do CLI
-            cli_available = VPNManager._run_command(["which", "protonvpn-cli"], check=False)[0]
-            if not cli_available:
-                return f"{Fore.RED}✖ VPN não instalada"
-
-            # 2. Verificação completa da instalação
             installed, install_msg = VPNManager.check_installation()
             if not installed:
                 return f"{Fore.RED}✖ {install_msg}"
 
-            # 3. Verificação de status
-            success, status_msg = VPNManager.status()
-            if success and "connected" in status_msg.lower():
+            connected, status_msg = VPNManager.get_connection_status()
+            if connected:
                 return f"{Fore.GREEN}✔ VPN Conectada"
-            else:
-                return f"{Fore.YELLOW}⊘ VPN Desconectada"
+            return f"{Fore.YELLOW}⊘ {status_msg}"
         except Exception as e:
             return f"{Fore.RED}✖ Erro ao verificar: {str(e)[:20]}"
 
