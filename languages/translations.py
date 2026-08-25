@@ -33,7 +33,6 @@ LANGUAGES = {
             'unsupported': f"{Fore.RED}Automatic install not supported on this system."
         },
         'admin': {
-            'windows': "Elevating to administrator...",
             'linux': "Restarting with sudo privileges..."
         },
         'menu': {
@@ -121,7 +120,6 @@ LANGUAGES = {
             'unsupported': f"{Fore.RED}Instalação automática não suportada neste sistema."
         },
         'admin': {
-            'windows': "Elevando para administrador...",
             'linux': "Reiniciando com privilégios sudo..."
         },
         'menu': {

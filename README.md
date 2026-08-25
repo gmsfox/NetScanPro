@@ -21,25 +21,7 @@ NetScan Pro é uma ferramenta avançada para escaneamento de rede e engenharia s
 
 ### Instalação
 
-#### Windows
-1. **Instalação do Python:**
-   - Baixe e instale Python 3.x em [python.org](https://www.python.org/downloads/).
-   - Marque a opção "Add Python to PATH" durante a instalação.
-
-2. **Clonar o Repositório:**
-   - Abra o Prompt de Comando (CMD) e execute:
-     ```sh
-     git clone https://github.com/gmsfox/NetScanPro
-     cd NetScanPro
-     ```
-
-3. **Instalar Dependências:**
-   - Instale as dependências listadas no arquivo `requirements.txt`:
-     ```sh
-     pip install -r requirements.txt
-     ```
-
-#### Linux (Kali, Ubuntu, etc.)
+#### Linux (Kali, Ubuntu, Debian, etc.)
 1. **Instalar Python e pip:**
    - Verifique e instale Python 3 e pip com os comandos:
      ```sh
@@ -62,6 +44,9 @@ NetScan Pro é uma ferramenta avançada para escaneamento de rede e engenharia s
      ```
 
 ### Executando o NetScan Pro
+
+O NetScan Pro é compatível somente com terminais Linux. A instalação da VPN e a atualização de dependências exigem uma distribuição baseada em Debian/Ubuntu e acesso a `sudo`.
+
 1. **Executar o Script:**
    - No diretório do projeto, execute:
      ```sh
