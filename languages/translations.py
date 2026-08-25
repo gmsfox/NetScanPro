@@ -1,7 +1,7 @@
 """
 NetScan Pro - Translation Module
 
-Complete language strings for all tool functionality including VPN module.
+Language strings for the application.
 """
 
 from colorama import Fore, Style
@@ -58,40 +58,6 @@ LANGUAGES = {
         'social': {
             'simulated': "[Social engineering tools simulation]"
         },
-        'vpn': {
-            'menu_title': "VPN CONTROL PANEL",
-            'connect': "Connect to VPN",
-            'disconnect': "Disconnect VPN",
-            'status': "Connection Status",
-            'install': "Reinstall VPN",
-            'back': "Back to Main Menu",
-            'connected': f"{Fore.GREEN}✔ CONNECTED",
-            'disconnected': f"{Fore.RED}✖ DISCONNECTED",
-            'installing': f"{Fore.YELLOW}Installing ProtonVPN...",
-            'updating': f"{Fore.YELLOW}Updating VPN components...",
-            'already_installed': f"{Fore.GREEN}ProtonVPN already installed",
-            'install_success': f"{Fore.GREEN}✓ Installation successful!",
-            'install_failed': f"{Fore.RED}Installation failed:",
-            'not_installed': f"{Fore.YELLOW}ProtonVPN not found.",
-            'installation_instructions': f"{Fore.CYAN}This may take a few minutes. Please wait...",
-            'checking_version': f"{Fore.YELLOW}Checking for latest version...",
-            'version_found': f"{Fore.GREEN}Latest version found: {{}}",
-            'downloading_pkg': f"{Fore.CYAN}Downloading package {{}}...",
-            'configuring_login': f"{Fore.CYAN}Configuring VPN login...",
-            'login_success': f"{Fore.GREEN}✓ Login successful!",
-            'login_failed': f"{Fore.RED}Login failed: {{}}",
-            'version_error': f"{Fore.RED}Version check failed: {{}}",
-            'install_retry': f"{Fore.YELLOW}Attempting alternative installation...",
-            'gpg_error': f"{Fore.RED}GPG error: {{}}",
-            'repo_error': f"{Fore.RED}Repository error: {{}}",
-            'dependency_error': f"{Fore.RED}Dependency error: {{}}",
-            'cleanup': f"{Fore.YELLOW}Cleaning up temporary files...",
-            'press_enter': "Press Enter to continue...",
-            'invalid': f"{Fore.RED}Invalid option",
-            'check_updates': "Check for updates",
-            'uninstall': "Uninstall VPN",
-            'status_checking': f"{Fore.YELLOW}Checking VPN status..."
-        }
     },
     '2': {  # Português
         'common': {
@@ -144,39 +110,5 @@ LANGUAGES = {
         'social': {
             'simulated': "[Simulação de ferramentas de engenharia social]"
         },
-        'vpn': {
-            'menu_title': "PAINEL DE CONTROLE VPN",
-            'connect': "Conectar à VPN",
-            'disconnect': "Desconectar VPN",
-            'status': "Status de Conexão",
-            'install': "Reinstalar VPN",
-            'back': "Voltar ao Menu",
-            'connected': f"{Fore.GREEN}✔ CONECTADO",
-            'disconnected': f"{Fore.RED}✖ DESCONECTADO",
-            'installing': f"{Fore.YELLOW}Instalando ProtonVPN...",
-            'updating': f"{Fore.YELLOW}Atualizando componentes VPN...",
-            'already_installed': f"{Fore.GREEN}ProtonVPN já instalado",
-            'install_success': f"{Fore.GREEN}✓ Instalação concluída!",
-            'install_failed': f"{Fore.RED}Falha na instalação:",
-            'not_installed': f"{Fore.YELLOW}ProtonVPN não encontrado.",
-            'installation_instructions': f"{Fore.CYAN}Isso pode levar alguns minutos. Por favor aguarde...",
-            'checking_version': f"{Fore.YELLOW}Verificando versão mais recente...",
-            'version_found': f"{Fore.GREEN}Versão mais recente encontrada: {{}}",
-            'downloading_pkg': f"{Fore.CYAN}Baixando pacote {{}}...",
-            'configuring_login': f"{Fore.CYAN}Configurando login VPN...",
-            'login_success': f"{Fore.GREEN}✓ Login realizado com sucesso!",
-            'login_failed': f"{Fore.RED}Falha no login: {{}}",
-            'version_error': f"{Fore.RED}Falha ao verificar versão: {{}}",
-            'install_retry': f"{Fore.YELLOW}Tentando instalação alternativa...",
-            'gpg_error': f"{Fore.RED}Erro na chave GPG: {{}}",
-            'repo_error': f"{Fore.RED}Erro no repositório: {{}}",
-            'dependency_error': f"{Fore.RED}Erro nas dependências: {{}}",
-            'cleanup': f"{Fore.YELLOW}Limpando arquivos temporários...",
-            'press_enter': "Pressione Enter para continuar...",
-            'invalid': f"{Fore.RED}Opção inválida",
-            'check_updates': "Verificar atualizações",
-            'uninstall': "Desinstalar VPN",
-            'status_checking': f"{Fore.YELLOW}Verificando status da VPN..."
-        }
     }
 }

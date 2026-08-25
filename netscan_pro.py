@@ -6,14 +6,12 @@ Ferramenta de rede com funcionalidades de escaneamento e engenharia social.
 import os
 import platform
 import subprocess
-import turtle
 import venv
 import time
 import sys
 import logging
 import shutil
 import threading
-from typing import Tuple
 from colorama import init, Fore, Style
 from languages.translations import LANGUAGES
 
