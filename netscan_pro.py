@@ -425,12 +425,15 @@ def find_venv_python_executable(venv_path: str) -> str:
 
 def update_dependencies_crossplatform(user_language: str) -> None:
     """Install only the Python dependencies missing from the virtual environment."""
+    global _update_cache
     clear_console()
     print(f"{Fore.YELLOW}{LANGUAGES[user_language]['common']['updating']}")
 
     venv_path = ".venv"
     python_bin = os.path.join(venv_path, "bin", "python3")
     update_successful = False
+    _update_cache['dependency_updates'] = False
+    _update_cache['dependency_last_check'] = time.time()
     try:
         ensure_venv_support(user_language)
         if not os.path.exists(python_bin):
@@ -445,6 +448,8 @@ def update_dependencies_crossplatform(user_language: str) -> None:
 
         print(LANGUAGES[user_language]['common']['dependencies_success'])
         update_successful = True
+        _update_cache['dependency_updates'] = False
+        _update_cache['dependency_last_check'] = time.time()
 
     except subprocess.CalledProcessError as e:
         error_msg = f"Subprocess error: {e.stderr.decode().strip() if e.stderr else str(e)}"
@@ -457,6 +462,8 @@ def update_dependencies_crossplatform(user_language: str) -> None:
         if update_successful:
             input(LANGUAGES[user_language]['common']['press_enter'])
         else:
+            _update_cache['dependency_updates'] = None
+            _update_cache['dependency_last_check'] = 0
             input(LANGUAGES[user_language]['common']['press_enter'])
 
 def main_menu(user_language: str) -> None:
